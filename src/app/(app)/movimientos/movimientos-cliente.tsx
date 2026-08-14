@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
-import { Boton, Campo, Input, Select, Tarjeta, Topbar, Vacio } from "@/components/ui";
+import { Boton, BotonEnlace, Campo, Input, Select, Tarjeta, Topbar, Vacio } from "@/components/ui";
 import { api } from "@/lib/cliente-api";
 import { formato } from "@/lib/formato";
 import type { CategoriaDTO, CuentaDTO, Moneda, MovimientoDTO, TipoMovimiento } from "@/types";
@@ -95,7 +95,10 @@ export function MovimientosCliente({
     return (
       <div>
         <Topbar titulo="Movimientos" />
-        <Vacio mensaje="Primero crea una cuenta; sin cuenta no hay dónde registrar el movimiento." />
+        <Vacio
+          mensaje="Para registrar un movimiento hace falta al menos una cuenta activa: es de donde sale o entra el dinero."
+          accion={<BotonEnlace href="/cuentas">Crear mi primera cuenta</BotonEnlace>}
+        />
       </div>
     );
   }

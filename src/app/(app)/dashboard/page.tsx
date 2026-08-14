@@ -12,7 +12,7 @@ import { nombreMes } from "@/lib/formato";
 import { ChartCategorias, ChartTendencia } from "@/components/dashboard/chart-categorias";
 import { GaugeCobertura } from "@/components/dashboard/gauge-cobertura";
 import { KpiCard } from "@/components/dashboard/kpi-card";
-import { Aviso, CabeceraTarjeta, Pill, Tarjeta, Topbar, Vacio } from "@/components/ui";
+import { Aviso, BotonEnlace, CabeceraTarjeta, Pill, Tarjeta, Topbar, Vacio } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -37,6 +37,9 @@ export default async function DashboardPage() {
   }
 
   const capacidad = await calcularCapacidadEndeudamiento(usuarioId, hoy);
+
+  // Sin cuentas el dashboard son puros ceros; mejor decir qué hacer.
+  const sinCuentas = resumen.balancePorMoneda.length === 0;
 
   // Avisos: lo que vence pronto y las tarjetas cerca del límite.
   const [proximos, tarjetas] = await Promise.all([
@@ -85,6 +88,21 @@ export default async function DashboardPage() {
           </div>
         }
       />
+
+      {sinCuentas ? (
+        <Tarjeta className="mb-4 border-gold">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-[14.5px] font-bold">Empieza por tus cuentas</p>
+              <p className="text-[13px] text-ink-soft">
+                Todo lo demás cuelga de ahí: sin una cuenta activa no se pueden registrar
+                movimientos ni importar tu historial.
+              </p>
+            </div>
+            <BotonEnlace href="/cuentas">Crear mi primera cuenta</BotonEnlace>
+          </div>
+        </Tarjeta>
+      ) : null}
 
       {faltaTasa ? (
         <Tarjeta className="mb-4 border-gold">

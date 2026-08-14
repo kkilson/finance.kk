@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type {
   ButtonHTMLAttributes,
   InputHTMLAttributes,
@@ -134,11 +135,24 @@ export function Pill({
   );
 }
 
-export function Vacio({ mensaje }: { mensaje: string }) {
+export function Vacio({ mensaje, accion }: { mensaje: string; accion?: ReactNode }) {
   return (
-    <p className="rounded-xl border border-dashed border-line px-4 py-8 text-center text-[13px] text-ink-soft">
-      {mensaje}
-    </p>
+    <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-line px-4 py-8 text-center text-[13px] text-ink-soft">
+      <p>{mensaje}</p>
+      {accion}
+    </div>
+  );
+}
+
+/** Botón que además navega. Para que un estado vacío no sea un callejón sin salida. */
+export function BotonEnlace({ href, children }: { href: string; children: ReactNode }) {
+  return (
+    <Link
+      href={href}
+      className="rounded-3xl bg-gold px-5 py-2.5 text-[13px] font-bold text-teal-deep transition hover:brightness-105"
+    >
+      {children}
+    </Link>
   );
 }
 

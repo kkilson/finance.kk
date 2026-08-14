@@ -2,7 +2,17 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Boton, CabeceraTarjeta, Campo, Pill, Select, Tarjeta, Topbar, Vacio } from "@/components/ui";
+import {
+  Boton,
+  BotonEnlace,
+  CabeceraTarjeta,
+  Campo,
+  Pill,
+  Select,
+  Tarjeta,
+  Topbar,
+  Vacio,
+} from "@/components/ui";
 import { api, ApiError } from "@/lib/cliente-api";
 import { formato } from "@/lib/formato";
 import type { Mapeo } from "@/lib/servicios/importacion";
@@ -105,7 +115,10 @@ export function ImportarCliente({
     return (
       <div>
         <Topbar titulo="Importar historial" />
-        <Vacio mensaje="Primero crea al menos una cuenta: los movimientos importados tienen que caer en alguna." />
+        <Vacio
+          mensaje="Los movimientos importados tienen que caer en alguna cuenta, y todavía no hay ninguna activa."
+          accion={<BotonEnlace href="/cuentas">Crear mi primera cuenta</BotonEnlace>}
+        />
       </div>
     );
   }
