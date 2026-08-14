@@ -17,10 +17,9 @@ async function ejecutar(req: Request) {
     if (enviado !== esperado) return errorJson("No autorizado", 401);
 
     // Las franjas horarias de cada regla se evalúan con la hora local del
-    // proceso. En Vercel eso es UTC salvo que se defina TZ, y sin eso los
-    // avisos salen corridos 4 horas sin ningún error visible.
-    if (!process.env.TZ) {
-      console.warn("TZ no está definida: las franjas horarias se evalúan en UTC");
+    // proceso, que fija src/instrumentation.ts a partir de APP_TZ.
+    if (!process.env.APP_TZ) {
+      console.warn("APP_TZ no está definida: las franjas horarias pueden evaluarse en UTC");
     }
 
     return json({ ejecutado: new Date().toISOString(), resultados: await notificarATodos() });

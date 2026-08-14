@@ -110,14 +110,21 @@ existente a propósito.
 
 Importar el repo y definir las variables de entorno del proyecto:
 
-`DATABASE_URL`, `DIRECT_URL`, `AUTH_SECRET`, `CRON_SECRET`, `TZ`,
+`DATABASE_URL`, `DIRECT_URL`, `AUTH_SECRET`, `CRON_SECRET`, `APP_TZ`,
 `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY`,
 `VAPID_SUBJECT`.
 
-**`TZ=America/Caracas` no es opcional.** El runtime de Vercel corre en UTC, y
-las franjas horarias de las notificaciones se evalúan con la hora local del
-proceso: sin esa variable los avisos salen corridos cuatro horas y nada falla
-de forma visible.
+**`APP_TZ=America/Caracas` no es opcional.** El runtime corre en UTC y todo el
+código razona en hora local: sin esa variable las franjas horarias de los
+avisos salen corridas cuatro horas y, entre las 20:00 y la medianoche, la app
+cree que ya es el día siguiente — lo que mueve el mes del presupuesto, los días
+de cobertura y qué compromisos cuentan como vencidos. Nada de eso falla de
+forma visible.
+
+Se llama `APP_TZ` y no `TZ` porque **Vercel reserva ese nombre** y rechaza la
+variable. `src/instrumentation.ts` la lee al arrancar y se la asigna a `TZ` en
+caliente, que es algo que Node sí admite. En el log de arranque queda la línea
+`Zona horaria del proceso: …` para poder confirmarlo.
 
 El `vercel-build` aplica las migraciones pendientes antes de compilar, pero
 solo si `DIRECT_URL` apunta a algo que las soporte. Si falta o apunta al pooler
