@@ -1,4 +1,4 @@
-import { getDate, getDaysInMonth, setDate } from "date-fns";
+import { getDate, getDaysInMonth, setDate, startOfDay } from "date-fns";
 import { prisma } from "@/lib/prisma";
 import { NoEncontradoError, ReglaNegocioError } from "@/lib/api";
 import { aNumero, convertir, redondear } from "@/lib/moneda";
@@ -202,11 +202,28 @@ export async function copiarMesAnterior(
   return { creados: aCrear.length, omitidos: origen.length - aCrear.length };
 }
 
-/** Marca como ATRASADO lo que venció sin pagarse. Idempotente. */
+/**
+ * Marca como ATRASADO lo que venció sin pagarse, y devuelve a PENDIENTE lo que
+ * ya no lo está. Idempotente en los dos sentidos.
+ *
+ * El corte es el inicio del día, no el instante: un pago esperado HOY no está
+ * atrasado a media tarde. Comparar contra `now` lo marcaba en rojo apenas
+ * pasaba la hora del registro, que además es un mediodía arbitrario que pone
+ * el formulario.
+ */
 export async function marcarAtrasados(usuarioId: string, hoy: Date = new Date()) {
-  const { count } = await prisma.compromisoPresupuesto.updateMany({
-    where: { usuarioId, estado: "PENDIENTE", fechaEsperada: { lt: hoy } },
-    data: { estado: "ATRASADO" },
-  });
-  return count;
+  const corte = startOfDay(hoy);
+
+  const [atrasados, alDia] = await prisma.$transaction([
+    prisma.compromisoPresupuesto.updateMany({
+      where: { usuarioId, estado: "PENDIENTE", fechaEsperada: { lt: corte } },
+      data: { estado: "ATRASADO" },
+    }),
+    prisma.compromisoPresupuesto.updateMany({
+      where: { usuarioId, estado: "ATRASADO", fechaEsperada: { gte: corte } },
+      data: { estado: "PENDIENTE" },
+    }),
+  ]);
+
+  return { marcados: atrasados.count, revertidos: alDia.count };
 }
