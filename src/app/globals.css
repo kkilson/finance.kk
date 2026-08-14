@@ -1,29 +1,32 @@
 @import "tailwindcss";
 
 /*
- * Tokens tomados de rumbo-finanzas-prototipo.html (bloque :root).
- * Con Tailwind v4 la configuración vive en CSS, así que este @theme es el
- * equivalente del tailwind.config.ts que pedía la spec.
+ * Estilo minimalista: fondo gris muy claro, tarjetas blancas sin borde,
+ * controles tipo píldora y acento azul. La jerarquía la dan el espacio y el
+ * peso tipográfico, no las líneas ni las sombras.
  */
 @theme {
-  --color-bg: #f5f6f3;
+  --color-bg: #f4f5f7;
   --color-surface: #ffffff;
-  --color-surface-2: #eef1ec;
-  --color-ink: #182220;
-  --color-ink-soft: #5b6864;
-  --color-line: #dfe4de;
+  --color-surface-2: #eef0f3;
+  --color-ink: #16191d;
+  --color-ink-soft: #79818c;
+  /* Casi invisible a propósito: separa sin dibujar cajas. */
+  --color-line: #e9ebef;
 
-  --color-teal: #0f5257;
-  --color-teal-deep: #0a3a3e;
-  --color-gold: #c9962c;
-  --color-gold-soft: #f3e4c2;
-  --color-danger: #c1483d;
-  --color-danger-soft: #f6deda;
-  --color-success: #3f7a50;
-  --color-success-soft: #deebe0;
+  --color-brand: #2d8cff;
+  --color-brand-deep: #14508f;
+  --color-brand-suave: #e7f0ff;
 
-  --radius-card: 14px;
-  --radius-card-lg: 20px;
+  --color-danger: #e5484d;
+  --color-danger-soft: #fdeaea;
+  --color-success: #2fa96b;
+  --color-success-soft: #e4f5ec;
+  --color-warn: #d9822b;
+  --color-warn-soft: #fdf0e1;
+
+  --radius-card: 16px;
+  --radius-card-lg: 22px;
 
   --font-display: var(--font-outfit), sans-serif;
   --font-sans: var(--font-inter), sans-serif;
@@ -36,19 +39,31 @@ body {
   color: var(--color-ink);
   font-family: var(--font-sans);
   font-size: 14px;
+  -webkit-font-smoothing: antialiased;
 }
 
 h1,
 h2,
 h3 {
   font-family: var(--font-display);
+  letter-spacing: -0.015em;
 }
 
-/* Cifras siempre en monoespaciada, como en el prototipo. */
+/* Cifras en monoespaciada para que las columnas de montos no bailen. */
 .num {
   font-family: var(--font-mono);
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
+}
+
+/* Degradado azul de la cabecera, con el borde inferior curvo del referente. */
+.cabecera-degradada {
+  background: linear-gradient(170deg, #bcd8ff 0%, #d8e8ff 45%, var(--color-bg) 100%);
+}
+
+/* Sombra apenas perceptible; en minimalismo la profundidad se insinúa. */
+.sombra-suave {
+  box-shadow: 0 1px 2px rgb(16 24 40 / 0.04), 0 1px 3px rgb(16 24 40 / 0.06);
 }
 
 @media (prefers-reduced-motion: reduce) {

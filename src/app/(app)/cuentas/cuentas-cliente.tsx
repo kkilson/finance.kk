@@ -2,7 +2,18 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { Boton, Campo, Input, Select, Tarjeta, TituloTarjeta, Topbar, Vacio } from "@/components/ui";
+import {
+  Boton,
+  Campo,
+  Input,
+  Segmentado,
+  Select,
+  Tarjeta,
+  Tile,
+  TituloTarjeta,
+  Topbar,
+  Vacio,
+} from "@/components/ui";
 import { api } from "@/lib/cliente-api";
 import { formato } from "@/lib/formato";
 import type { CuentaDTO, Moneda, TipoCuenta } from "@/types";
@@ -97,26 +108,16 @@ export function CuentasCliente({
         </Tarjeta>
       </div>
 
-      <div className="mb-4 flex flex-wrap gap-2">
-        {(
-          [
-            ["TODAS", "Todas"],
-            ["BS", "Bolívares"],
-            ["USD", "Dólares"],
-          ] as [Filtro, string][]
-        ).map(([valor, label]) => (
-          <button
-            key={valor}
-            onClick={() => setFiltro(valor)}
-            className={`rounded-[20px] border px-4 py-2 text-[13px] font-semibold ${
-              filtro === valor
-                ? "border-teal bg-teal text-white"
-                : "border-line bg-surface text-ink-soft"
-            }`}
-          >
-            {label}
-          </button>
-        ))}
+      <div className="mb-4">
+        <Segmentado
+          valor={filtro}
+          onChange={setFiltro}
+          opciones={[
+            { valor: "TODAS", label: "Todas" },
+            { valor: "BS", label: "Bs Bolívares" },
+            { valor: "USD", label: "$ Dólares" },
+          ]}
+        />
       </div>
 
       {abierto ? (
@@ -190,14 +191,9 @@ export function CuentasCliente({
           return (
             <div
               key={c.id}
-              className="group mb-2.5 flex items-center gap-3.5 rounded-[14px] border border-line bg-surface px-4 py-3.5"
+              className="group mb-2.5 flex items-center gap-3.5 rounded-[18px] bg-surface px-4 py-3.5 sombra-suave"
             >
-              <div
-                className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[10px] text-base"
-                style={{ background: meta.fondo }}
-              >
-                {meta.icono}
-              </div>
+              <Tile color={meta.fondo}>{meta.icono}</Tile>
               <div className="min-w-0">
                 <div className="truncate text-[13.5px] font-semibold">{c.nombre}</div>
                 <div className="text-[11.5px] text-ink-soft">

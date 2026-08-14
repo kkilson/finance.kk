@@ -141,7 +141,7 @@ export function PanelNotificaciones({
             ) : estado === "sin_soporte" ? (
               <Pill tono="neutral">Sin soporte</Pill>
             ) : (
-              <Pill tono="gold">Sin activar</Pill>
+              <Pill tono="brand">Sin activar</Pill>
             )
           }
         />

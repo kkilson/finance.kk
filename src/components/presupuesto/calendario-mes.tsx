@@ -45,7 +45,7 @@ export function CalendarioMes({
           <div
             key={dia}
             className={`min-h-16 rounded-[10px] p-1.5 text-[11px] ${
-              esHoy ? "bg-teal text-white" : "bg-surface-2"
+              esHoy ? "bg-brand-deep text-white" : "bg-surface-2"
             }`}
           >
             <div className={`text-[11.5px] font-semibold ${esHoy ? "text-white" : "text-ink-soft"}`}>

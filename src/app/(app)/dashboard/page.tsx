@@ -12,11 +12,11 @@ import { nombreMes } from "@/lib/formato";
 import { ChartCategorias, ChartTendencia } from "@/components/dashboard/chart-categorias";
 import { GaugeCobertura } from "@/components/dashboard/gauge-cobertura";
 import { KpiCard } from "@/components/dashboard/kpi-card";
-import { Aviso, BotonEnlace, CabeceraTarjeta, Pill, Tarjeta, Topbar, Vacio } from "@/components/ui";
+import { Aviso, BotonEnlace, CabeceraTarjeta, Pill, Tarjeta, Vacio } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
-const COLORES_BARRA = ["#3F7A50", "#C9962C", "#7C6BC4", "#C1483D", "#D9A83B"];
+const COLORES_BARRA = ["#2D8CFF", "#14508F", "#5AC8B0", "#E5484D", "#8B7BD8"];
 
 export default async function DashboardPage() {
   const usuarioId = await usuarioIdActual();
@@ -79,18 +79,42 @@ export default async function DashboardPage() {
 
   return (
     <div>
-      <Topbar
-        titulo={`Hola — así estás cerrando ${nombreMes(mesPeriodoDe(hoy)).split(" ")[0].toLowerCase()}`}
-        subtitulo="Resumen general de tus finanzas, actualizado con tus movimientos del mes"
-        extra={
-          <div className="rounded-[10px] border border-line bg-surface px-3.5 py-2 text-[12.5px] text-ink-soft">
-            📅 {nombreMes(mesPeriodoDe(hoy))}
+      {/* Cabecera con el degradado azul: el balance manda, todo lo demás susurra. */}
+      <div className="cabecera-degradada -mx-4 -mt-5 mb-5 rounded-b-[32px] px-5 pb-8 pt-7 lg:-mx-8 lg:-mt-6 lg:px-8">
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-[12.5px] text-brand-deep/70">Mi balance</p>
+            <p className="num mt-1 text-[38px] font-semibold leading-none text-brand-deep">
+              {fmt(resumen.balanceTotal)}
+            </p>
+            <p className="mt-2 text-[12.5px] text-brand-deep/70">
+              {resumen.tasaBsPorUsd
+                ? `Bs ${resumen.tasaBsPorUsd.toFixed(2)} / $`
+                : "Sin tasa registrada"}
+            </p>
           </div>
-        }
-      />
+          <div className="rounded-full bg-white/60 px-3.5 py-1.5 text-[12.5px] font-medium text-brand-deep">
+            {nombreMes(mesPeriodoDe(hoy))}
+          </div>
+        </div>
+
+        {resumen.balancePorMoneda.length ? (
+          <div className="mt-5 flex flex-wrap gap-2">
+            {resumen.balancePorMoneda.map((b) => (
+              <span
+                key={b.moneda}
+                className="rounded-full bg-white/70 px-3.5 py-1.5 text-[12.5px] font-medium text-brand-deep"
+              >
+                {b.moneda === "USD" ? "$ " : "Bs "}
+                <span className="num">{formatearMonto(b.total, b.moneda).replace(/^[^\d-]+/, "")}</span>
+              </span>
+            ))}
+          </div>
+        ) : null}
+      </div>
 
       {sinCuentas ? (
-        <Tarjeta className="mb-4 border-gold">
+        <Tarjeta className="mb-4 ring-1 ring-brand/30">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-[14.5px] font-bold">Empieza por tus cuentas</p>
@@ -105,11 +129,11 @@ export default async function DashboardPage() {
       ) : null}
 
       {faltaTasa ? (
-        <Tarjeta className="mb-4 border-gold">
+        <Tarjeta className="mb-4 ring-1 ring-brand/30">
           <p className="text-[13px]">
             Tienes cuentas en las dos monedas pero no hay tasa de cambio registrada, así que no
             puedo calcular los días de cobertura.{" "}
-            <Link href="/ajustes" className="font-semibold text-teal underline">
+            <Link href="/ajustes" className="font-semibold text-brand-deep underline">
               Registra la tasa
             </Link>
             .
@@ -117,14 +141,7 @@ export default async function DashboardPage() {
         </Tarjeta>
       ) : null}
 
-      <div className="mb-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard
-          etiqueta="Balance total"
-          valor={fmt(resumen.balanceTotal)}
-          detalle={resumen.balancePorMoneda
-            .map((b) => formatearMonto(b.total, b.moneda))
-            .join("  ·  ")}
-        />
+      <div className="mb-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <KpiCard
           etiqueta="Ingresos del mes"
           valor={fmt(resumen.ingresoDelMes)}
@@ -156,14 +173,14 @@ export default async function DashboardPage() {
       </div>
 
       <div className="mb-4 grid gap-4 lg:grid-cols-[1.3fr_0.7fr]">
-        <div className="relative overflow-hidden rounded-[20px] bg-linear-to-br from-teal-deep to-teal px-5 py-[18px] text-white">
+        <div className="relative overflow-hidden rounded-[22px] bg-linear-to-br from-brand-deep to-brand px-5 py-[18px] text-white sombra-suave">
           <div
             className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full"
             style={{
-              background: "radial-gradient(circle, rgba(201,150,44,.35), transparent 70%)",
+              background: "radial-gradient(circle, rgba(255,255,255,.35), transparent 70%)",
             }}
           />
-          <p className="mb-1 text-[13px] font-semibold uppercase tracking-[0.04em] text-[#B9D8D4]">
+          <p className="mb-1 text-[13px] font-semibold uppercase tracking-[0.04em] text-white/70">
             Salud financiera
           </p>
           {cobertura ? (
@@ -173,7 +190,7 @@ export default async function DashboardPage() {
               estado={cobertura.estado}
             />
           ) : (
-            <p className="py-8 text-[13px] text-[#D8ECE9]">
+            <p className="py-8 text-[13px] text-white/80">
               No se puede calcular la cobertura sin una tasa de cambio registrada.
             </p>
           )}

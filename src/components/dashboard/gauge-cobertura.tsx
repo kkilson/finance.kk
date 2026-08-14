@@ -26,7 +26,7 @@ export function GaugeCobertura({
   const CIRC = 314; // 2πr con r=50
   const horizonte = Math.max(diasHastaIngreso ?? 30, 1);
   const pct = estado === "sin_datos" ? 0 : Math.min(Math.max(dias / horizonte, 0), 1);
-  const color = estado === "rojo" ? "#E88F86" : estado === "amarillo" ? "#E8C066" : "#C9962C";
+  const color = estado === "rojo" ? "#FF9B9B" : estado === "amarillo" ? "#FFD27A" : "#FFFFFF";
   // El número grande y el texto tienen que decir lo mismo.
   const diasRedondeados = Math.round(dias);
 
@@ -57,18 +57,18 @@ export function GaugeCobertura({
         >
           {estado === "sin_datos" ? "—" : diasRedondeados}
         </text>
-        <text x="60" y="74" textAnchor="middle" fontSize="9" fill="#B9D8D4">
+        <text x="60" y="74" textAnchor="middle" fontSize="9" fill="rgba(255,255,255,.7)">
           días
         </text>
       </svg>
       <div>
-        <div className="mb-0.5 text-[11.5px] uppercase tracking-[0.05em] text-[#B9D8D4]">
+        <div className="mb-0.5 text-[11.5px] uppercase tracking-[0.05em] text-white/70">
           Cobertura actual
         </div>
         <div className="font-display text-[30px] font-extrabold leading-tight">
           {estado === "sin_datos" ? "Sin datos" : `${diasRedondeados} días de cobertura`}
         </div>
-        <p className="mt-2 text-[12.5px] leading-[1.5] text-[#D8ECE9]">
+        <p className="mt-2 text-[12.5px] leading-[1.5] text-white/80">
           {LEYENDA[estado](diasRedondeados, diasHastaIngreso)}
         </p>
       </div>

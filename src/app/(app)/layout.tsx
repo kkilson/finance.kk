@@ -9,7 +9,9 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
   return (
     <div className="flex min-h-screen">
       <NavPrincipal moneda={usuario.monedaReferenciaDefault} />
-      <main className="max-w-[1180px] flex-1 px-4 pb-24 pt-5 lg:px-[34px] lg:pb-[60px] lg:pt-[26px]">
+      {/* El padding acá es el que compensan los márgenes negativos de la
+          cabecera degradada del dashboard; si cambia uno, cambia el otro. */}
+      <main className="w-full max-w-[1180px] flex-1 overflow-x-hidden px-4 pb-28 pt-5 lg:px-8 lg:pb-14 lg:pt-6">
         {children}
       </main>
     </div>

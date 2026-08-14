@@ -42,7 +42,7 @@ export function DeudaCard({
       : 0;
 
   return (
-    <div className="mb-3 rounded-[14px] border border-line bg-surface px-[18px] py-4">
+    <div className="mb-3 rounded-[22px] bg-surface px-[18px] py-4 sombra-suave">
       <div className="mb-3 flex items-start justify-between gap-3">
         <div>
           <div className="text-[14.5px] font-bold">{d.nombre}</div>
@@ -55,7 +55,7 @@ export function DeudaCard({
           </div>
         </div>
         {esTarjeta ? (
-          <Pill tono={pctUso >= 80 ? "danger" : pctUso >= 50 ? "gold" : "neutral"}>
+          <Pill tono={pctUso >= 80 ? "danger" : pctUso >= 50 ? "brand" : "neutral"}>
             {Math.round(pctUso)}% del límite
           </Pill>
         ) : d.saldoRestante === 0 ? (
@@ -93,13 +93,13 @@ export function DeudaCard({
       <div className="mt-3 h-[7px] overflow-hidden rounded bg-surface-2">
         <div
           className={`h-full rounded ${
-            esTarjeta ? (pctUso >= 80 ? "bg-danger" : "bg-gold") : "bg-teal"
+            esTarjeta ? (pctUso >= 80 ? "bg-danger" : "bg-brand") : "bg-brand-deep"
           }`}
           style={{ width: `${esTarjeta ? pctUso : Math.max(pctPagado, 2)}%` }}
         />
       </div>
 
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div className="mt-4 flex flex-wrap gap-2">
         <Boton variante="secundario" onClick={() => setPagando((v) => !v)}>
           {pagando ? "Cancelar" : "Registrar pago"}
         </Boton>

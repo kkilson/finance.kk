@@ -139,7 +139,7 @@ export function ImportarCliente({
             const f = e.target.files?.[0];
             if (f) void analizar(f);
           }}
-          className="text-[13px] file:mr-3 file:rounded-[20px] file:border-0 file:bg-gold file:px-4 file:py-2 file:text-[13px] file:font-bold file:text-teal-deep"
+          className="text-[13px] file:mr-3 file:rounded-full file:border-0 file:bg-brand file:px-4 file:py-2 file:text-[13px] file:font-semibold file:text-white"
         />
         <p className="mt-2 text-[11.5px] text-ink-soft">
           CSV o XLSX, hasta 4 MB. La primera fila tiene que traer los nombres de las columnas.

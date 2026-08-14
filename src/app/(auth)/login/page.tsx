@@ -31,14 +31,14 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center p-6">
+    <main className="cabecera-degradada flex min-h-screen items-center justify-center p-6">
       <Tarjeta className="w-full max-w-sm">
         <div className="mb-5 flex items-center gap-2.5">
-          <div className="flex h-[34px] w-[34px] items-center justify-center rounded-[9px] bg-linear-to-br from-gold to-[#E8C066]">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-linear-to-br from-brand to-brand-deep">
             <svg viewBox="0 0 24 24" fill="none" className="h-[18px] w-[18px]">
               <path
                 d="M4 18L10 10L14 14L20 6"
-                stroke="#0A3A3E"
+                stroke="#fff"
                 strokeWidth="2.4"
                 strokeLinecap="round"
                 strokeLinejoin="round"

@@ -2,7 +2,17 @@
 
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
-import { Boton, BotonEnlace, Campo, Input, Select, Tarjeta, Topbar, Vacio } from "@/components/ui";
+import {
+  Boton,
+  BotonEnlace,
+  Campo,
+  Input,
+  Segmentado,
+  Select,
+  Tarjeta,
+  Topbar,
+  Vacio,
+} from "@/components/ui";
 import { api } from "@/lib/cliente-api";
 import { formato } from "@/lib/formato";
 import type { CategoriaDTO, CuentaDTO, Moneda, MovimientoDTO, TipoMovimiento } from "@/types";
@@ -111,28 +121,20 @@ export function MovimientosCliente({
       />
 
       <Tarjeta className="mb-4">
-        <div className="mb-4 flex gap-2">
-          {(["GASTO", "INGRESO", "TRANSFERENCIA"] as TipoMovimiento[]).map((t) => (
-            <button
-              key={t}
-              type="button"
-              onClick={() => {
-                setTipo(t);
-                setCategoriaId("");
-              }}
-              className={`rounded-[20px] border px-4 py-2 text-[13px] font-semibold ${
-                tipo === t
-                  ? t === "GASTO"
-                    ? "border-danger bg-danger text-white"
-                    : t === "INGRESO"
-                      ? "border-success bg-success text-white"
-                      : "border-teal bg-teal text-white"
-                  : "border-line bg-surface text-ink-soft"
-              }`}
-            >
-              {t === "GASTO" ? "Gasto" : t === "INGRESO" ? "Ingreso" : "Transferencia"}
-            </button>
-          ))}
+        <div className="mb-4">
+          <Segmentado
+            valor={tipo}
+            onChange={(t) => {
+              setTipo(t);
+              setCategoriaId("");
+            }}
+            tonoActivo={tipo === "GASTO" ? "danger" : tipo === "INGRESO" ? "success" : "brand"}
+            opciones={[
+              { valor: "GASTO", label: "Gasto" },
+              { valor: "INGRESO", label: "Ingreso" },
+              { valor: "TRANSFERENCIA", label: "Transferencia" },
+            ]}
+          />
         </div>
 
         <form onSubmit={registrar} className="flex flex-col gap-4">
@@ -252,7 +254,7 @@ export function MovimientosCliente({
       {movimientos.length === 0 ? (
         <Vacio mensaje="Sin movimientos registrados todavía." />
       ) : (
-        <div className="rounded-[20px] border border-line bg-surface px-5 py-2">
+        <div className="rounded-[22px] bg-surface px-5 py-2 sombra-suave">
           {movimientos.map((m) => (
             <div
               key={m.id}

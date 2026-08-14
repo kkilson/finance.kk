@@ -14,7 +14,7 @@ import { Bar, Doughnut } from "react-chartjs-2";
 ChartJS.register(ArcElement, BarElement, CategoryScale, LinearScale, Tooltip, Legend);
 
 // Mismos colores de serie que el prototipo.
-const PALETA = ["#3F7A50", "#C9962C", "#7C6BC4", "#C1483D", "#D9A83B", "#8FA79E"];
+const PALETA = ["#2D8CFF", "#14508F", "#5AC8B0", "#E5484D", "#8B7BD8", "#F0A93B"];
 
 export function ChartCategorias({
   datos,
@@ -43,7 +43,7 @@ export function ChartCategorias({
       options={{
         maintainAspectRatio: false,
         cutout: "68%",
-        plugins: { legend: { position: "bottom", labels: { boxWidth: 10, font: { size: 11 } } } },
+        plugins: { legend: { position: "bottom", labels: { boxWidth: 8, usePointStyle: true, font: { size: 11 } } } },
       }}
     />
   );
@@ -64,13 +64,13 @@ export function ChartTendencia({
           {
             label: "Ingresos",
             data: datos.map((d) => d.ingresos),
-            backgroundColor: "#3F7A50",
+            backgroundColor: "#2FA96B",
             borderRadius: 5,
           },
           {
             label: "Gastos",
             data: datos.map((d) => d.gastos),
-            backgroundColor: "#C1483D",
+            backgroundColor: "#E5484D",
             borderRadius: 5,
           },
         ],
@@ -79,12 +79,12 @@ export function ChartTendencia({
         maintainAspectRatio: false,
         scales: {
           y: {
-            grid: { color: "#EEF1EC" },
+            grid: { color: "#EEF0F3" },
             ticks: { callback: (v) => `${simbolo}${v}` },
           },
           x: { grid: { display: false } },
         },
-        plugins: { legend: { position: "bottom", labels: { boxWidth: 10, font: { size: 11 } } } },
+        plugins: { legend: { position: "bottom", labels: { boxWidth: 8, usePointStyle: true, font: { size: 11 } } } },
       }}
     />
   );

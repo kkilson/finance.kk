@@ -53,7 +53,7 @@ export function DeudasCliente({
     capacidad.estado === "excedido"
       ? "text-danger"
       : capacidad.estado === "en_limite"
-        ? "text-gold"
+        ? "text-brand"
         : "text-success";
 
   return (
@@ -117,7 +117,7 @@ export function DeudasCliente({
                 capacidad.estado === "excedido"
                   ? "bg-danger"
                   : capacidad.estado === "en_limite"
-                    ? "bg-gold"
+                    ? "bg-brand"
                     : "bg-success"
               }`}
               style={{

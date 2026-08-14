@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { Boton, Campo, Input, Select, Tarjeta, Topbar, Vacio } from "@/components/ui";
+import { Boton, Campo, Input, Segmentado, Select, Tarjeta, Tile, Topbar, Vacio } from "@/components/ui";
 import { api } from "@/lib/cliente-api";
 import type { CategoriaDTO, TipoCategoria } from "@/types";
 
@@ -38,27 +38,16 @@ export function CategoriasCliente({ categorias }: { categorias: CategoriaDTO[] }
         subtitulo="La misma estructura que ya usas, lista para registrar cada movimiento en segundos"
       />
 
-      <div className="mb-[18px] flex gap-2">
-        {(
-          [
-            ["GASTO", "↓ Gastos"],
-            ["INGRESO", "↑ Ingresos"],
-          ] as [TipoCategoria, string][]
-        ).map(([valor, label]) => (
-          <button
-            key={valor}
-            onClick={() => setVista(valor)}
-            className={`rounded-[20px] border px-[18px] py-2 text-[13px] font-semibold ${
-              vista === valor
-                ? valor === "GASTO"
-                  ? "border-danger bg-danger text-white"
-                  : "border-success bg-success text-white"
-                : "border-line bg-surface text-ink-soft"
-            }`}
-          >
-            {label}
-          </button>
-        ))}
+      <div className="mb-5">
+        <Segmentado
+          valor={vista}
+          onChange={setVista}
+          tonoActivo={vista === "GASTO" ? "danger" : "success"}
+          opciones={[
+            { valor: "GASTO", label: "↓ Gastos" },
+            { valor: "INGRESO", label: "↑ Ingresos" },
+          ]}
+        />
       </div>
 
       {error ? <p className="mb-3 text-[13px] text-danger">{error}</p> : null}
@@ -72,15 +61,12 @@ export function CategoriasCliente({ categorias }: { categorias: CategoriaDTO[] }
             return (
               <div
                 key={g.id}
-                className="mb-3.5 rounded-2xl border border-line bg-surface px-[18px] py-4"
+                className="mb-3 rounded-[22px] bg-surface px-[18px] py-4 sombra-suave"
               >
                 <div className="mb-3 flex items-center gap-2.5">
-                  <div
-                    className="flex h-8 w-8 items-center justify-center rounded-[9px] text-[15px]"
-                    style={{ background: g.color ?? "#EEF1EC" }}
-                  >
+                  <Tile color={g.color} tamano="sm">
                     {g.icono ?? "•"}
-                  </div>
+                  </Tile>
                   <div className="text-[14.5px] font-bold">{g.nombre}</div>
                   <button
                     onClick={() => accion(() => api.del(`/api/categorias/${g.id}`))}
@@ -123,14 +109,9 @@ export function CategoriasCliente({ categorias }: { categorias: CategoriaDTO[] }
           {sueltas.map((c) => (
             <div
               key={c.id}
-              className="group flex min-w-[220px] flex-1 items-center gap-3.5 rounded-[14px] border border-line bg-surface px-4 py-3.5"
+              className="group flex min-w-[220px] flex-1 items-center gap-3.5 rounded-[18px] bg-surface px-4 py-3.5 sombra-suave"
             >
-              <div
-                className="flex h-[38px] w-[38px] items-center justify-center rounded-[10px] text-base"
-                style={{ background: c.color ?? "#EEF1EC" }}
-              >
-                {c.icono ?? "•"}
-              </div>
+              <Tile color={c.color}>{c.icono ?? "•"}</Tile>
               <div className="text-[13.5px] font-semibold">{c.nombre}</div>
               <button
                 onClick={() => accion(() => api.del(`/api/categorias/${c.id}`))}
