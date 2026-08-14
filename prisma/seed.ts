@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import { PrismaClient } from "../src/generated/prisma/client";
 
 /**
- * Taxonomía tomada de la vista "Categorías" de rumbo-finanzas-prototipo.html:
+ * Taxonomía tomada de la vista "Categorías" del prototipo visual (docs/rumbo-finanzas-prototipo.html):
  * grupos con subcategorías para gastos, lista plana para ingresos.
  * El color es el fondo del chip en el prototipo.
  */
@@ -139,8 +139,8 @@ async function main() {
   if (!connectionString) throw new Error("Falta DATABASE_URL");
   const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
 
-  const email = (process.env.SEED_EMAIL ?? "yo@rumbo.local").toLowerCase();
-  const password = process.env.SEED_PASSWORD ?? "rumbo1234";
+  const email = (process.env.SEED_EMAIL ?? "yo@kover.local").toLowerCase();
+  const password = process.env.SEED_PASSWORD ?? "kover1234";
   const nombre = process.env.SEED_NOMBRE ?? "Yo";
 
   const usuario = await prisma.usuario.upsert({

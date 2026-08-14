@@ -1,4 +1,4 @@
-# Rumbo
+# Kover
 
 Finanzas personales en bolívares y dólares. Implementación de
 [la spec técnica](docs/Spec-Tecnica-Rumbo-ClaudeCode.md), fases 0 a 5: cuentas, movimientos,
@@ -16,7 +16,7 @@ referencia.
 
 > El encoding importa: los íconos de las categorías son emoji y una base creada
 > en WIN1252 o LATIN1 los rechaza al insertar. Verifícalo con
-> `SELECT pg_encoding_to_char(encoding) FROM pg_database WHERE datname='rumbo';`
+> `SELECT pg_encoding_to_char(encoding) FROM pg_database WHERE datname='kover';`
 
 ## Arrancar en local
 
@@ -29,7 +29,7 @@ docker compose up -d db
 Sin Docker, crea la base explícitamente en UTF8:
 
 ```bash
-createdb -E UTF8 -T template0 rumbo
+createdb -E UTF8 -T template0 kover
 ```
 
 2. Configurar el entorno:
@@ -47,7 +47,7 @@ npx prisma migrate deploy
 npm run db:seed
 ```
 
-El seed crea el usuario `yo@rumbo.local` / `rumbo1234` (cámbialos con
+El seed crea el usuario `yo@kover.local` / `kover1234` (cámbialos con
 `SEED_EMAIL`, `SEED_PASSWORD`, `SEED_NOMBRE`), las 62 categorías del prototipo
 y, si defines `SEED_TASA`, una tasa de cambio inicial.
 
@@ -96,7 +96,7 @@ como `checksum`.
 
 ### Cambiar la contraseña del usuario
 
-El seed crea el usuario con la contraseña por defecto `rumbo1234`, que está
+El seed crea el usuario con la contraseña por defecto `kover1234`, que está
 escrita acá y este repo es público. Cámbiala antes de exponer la app:
 
 ```bash

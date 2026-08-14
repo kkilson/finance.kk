@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Logo } from "@/components/logo";
 import { Boton, Campo, Input, Tarjeta } from "@/components/ui";
 
 export default function LoginPage() {
@@ -34,19 +35,9 @@ export default function LoginPage() {
     <main className="cabecera-degradada flex min-h-screen items-center justify-center p-6">
       <Tarjeta className="w-full max-w-sm">
         <div className="mb-5 flex items-center gap-2.5">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-linear-to-br from-brand to-brand-deep">
-            <svg viewBox="0 0 24 24" fill="none" className="h-[18px] w-[18px]">
-              <path
-                d="M4 18L10 10L14 14L20 6"
-                stroke="#fff"
-                strokeWidth="2.4"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </div>
+          <Logo className="h-11 w-11" />
           <div>
-            <h1 className="font-display text-[20px] font-bold">Rumbo</h1>
+            <h1 className="font-display text-[20px] font-bold">Kover</h1>
             <p className="-mt-0.5 text-[12px] text-ink-soft">
               Tus finanzas en bolívares y dólares
             </p>

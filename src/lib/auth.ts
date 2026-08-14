@@ -3,7 +3,7 @@ import { SignJWT, jwtVerify } from "jose";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 
-const COOKIE = "rumbo_session";
+const COOKIE = "kover_session";
 const DIAS_VALIDEZ = 30;
 
 function secret() {

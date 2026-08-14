@@ -1,0 +1,29 @@
+<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Kover">
+  <circle cx="60" cy="60" r="60" fill="#131E32" />
+  <!-- Eje en L -->
+  <g fill="#ffffff">
+    <rect x="26" y="26" width="10" height="68" />
+    <rect x="26" y="84" width="68" height="10" />
+    <!-- Barras ascendentes -->
+    <rect x="46" y="64" width="12" height="20" />
+    <rect x="64" y="52" width="12" height="32" />
+    <rect x="82" y="40" width="12" height="44" />
+  </g>
+  <!-- Tendencia al alza, con la punta saliendo del marco -->
+  <path
+    d="M44 72 L62 54 L74 64 L94 38"
+    fill="none"
+    stroke="#ffffff"
+    stroke-width="7"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M80 34 H98 V52"
+    fill="none"
+    stroke="#ffffff"
+    stroke-width="7"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</svg>

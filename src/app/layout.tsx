@@ -11,7 +11,7 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Rumbo",
+  title: "Kover",
   description: "Finanzas personales en bolívares y dólares",
 };
 

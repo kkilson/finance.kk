@@ -14,7 +14,7 @@ import { Bar, Doughnut } from "react-chartjs-2";
 ChartJS.register(ArcElement, BarElement, CategoryScale, LinearScale, Tooltip, Legend);
 
 // Mismos colores de serie que el prototipo.
-const PALETA = ["#2D8CFF", "#14508F", "#5AC8B0", "#E5484D", "#8B7BD8", "#F0A93B"];
+const PALETA = ["#131E32", "#2C4066", "#5B7BA8", "#8FA8C8", "#5AC8B0", "#E5484D"];
 
 export function ChartCategorias({
   datos,

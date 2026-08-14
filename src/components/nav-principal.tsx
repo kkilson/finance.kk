@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { Logo } from "@/components/logo";
 import { api } from "@/lib/cliente-api";
 import type { Moneda } from "@/types";
 
@@ -44,9 +45,9 @@ export function NavPrincipal({ moneda }: { moneda: Moneda }) {
     <>
       <aside className="hidden w-[232px] shrink-0 flex-col bg-surface px-4 py-6 lg:flex">
         <div className="flex items-center gap-2.5 px-2 pb-7">
-          <Marca />
+          <Logo />
           <div>
-            <div className="font-display text-[17px] font-semibold">Rumbo</div>
+            <div className="font-display text-[17px] font-semibold">Kover</div>
             <div className="-mt-0.5 text-[11px] text-ink-soft">finanzas personales</div>
           </div>
         </div>
@@ -173,22 +174,6 @@ export function NavPrincipal({ moneda }: { moneda: Moneda }) {
         </button>
       </nav>
     </>
-  );
-}
-
-function Marca() {
-  return (
-    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-brand to-brand-deep">
-      <svg viewBox="0 0 24 24" fill="none" className="h-[18px] w-[18px]">
-        <path
-          d="M4 18L10 10L14 14L20 6"
-          stroke="#fff"
-          strokeWidth="2.4"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
-    </div>
   );
 }
 

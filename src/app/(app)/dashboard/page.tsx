@@ -16,7 +16,7 @@ import { Aviso, BotonEnlace, CabeceraTarjeta, Pill, Tarjeta, Vacio } from "@/com
 
 export const dynamic = "force-dynamic";
 
-const COLORES_BARRA = ["#2D8CFF", "#14508F", "#5AC8B0", "#E5484D", "#8B7BD8"];
+const COLORES_BARRA = ["#131E32", "#2C4066", "#5B7BA8", "#8FA8C8", "#5AC8B0"];
 
 export default async function DashboardPage() {
   const usuarioId = await usuarioIdActual();
@@ -173,7 +173,7 @@ export default async function DashboardPage() {
       </div>
 
       <div className="mb-4 grid gap-4 lg:grid-cols-[1.3fr_0.7fr]">
-        <div className="relative overflow-hidden rounded-[22px] bg-linear-to-br from-brand-deep to-brand px-5 py-[18px] text-white sombra-suave">
+        <div className="relative overflow-hidden rounded-[22px] bg-linear-to-br from-brand to-brand-medio px-5 py-[18px] text-white sombra-suave">
           <div
             className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full"
             style={{

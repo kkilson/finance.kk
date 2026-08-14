@@ -2,7 +2,7 @@
 
 /*
  * Estilo minimalista: fondo gris muy claro, tarjetas blancas sin borde,
- * controles tipo píldora y acento azul. La jerarquía la dan el espacio y el
+ * controles tipo píldora y el azul marino de la marca como acento. La jerarquía la dan el espacio y el
  * peso tipográfico, no las líneas ni las sombras.
  */
 @theme {
@@ -14,9 +14,11 @@
   /* Casi invisible a propósito: separa sin dibujar cajas. */
   --color-line: #e9ebef;
 
-  --color-brand: #2d8cff;
-  --color-brand-deep: #14508f;
-  --color-brand-suave: #e7f0ff;
+  /* Azul marino del logo; el resto de la familia sale de ahí. */
+  --color-brand: #131e32;
+  --color-brand-deep: #0a1120;
+  --color-brand-medio: #2c4066;
+  --color-brand-suave: #e9edf4;
 
   --color-danger: #e5484d;
   --color-danger-soft: #fdeaea;
@@ -56,9 +58,9 @@ h3 {
   font-variant-numeric: tabular-nums;
 }
 
-/* Degradado azul de la cabecera, con el borde inferior curvo del referente. */
+/* Degradado de la cabecera: el marino del logo, aclarado hasta el fondo. */
 .cabecera-degradada {
-  background: linear-gradient(170deg, #bcd8ff 0%, #d8e8ff 45%, var(--color-bg) 100%);
+  background: linear-gradient(170deg, #c3cede 0%, #dfe4ed 45%, var(--color-bg) 100%);
 }
 
 /* Sombra apenas perceptible; en minimalismo la profundidad se insinúa. */

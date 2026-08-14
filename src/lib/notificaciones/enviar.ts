@@ -9,7 +9,7 @@ let configurado = false;
 function configurarVapid(): boolean {
   const publica = process.env.VAPID_PUBLIC_KEY;
   const privada = process.env.VAPID_PRIVATE_KEY;
-  const contacto = process.env.VAPID_SUBJECT ?? "mailto:rumbo@localhost";
+  const contacto = process.env.VAPID_SUBJECT ?? "mailto:kover@localhost";
   if (!publica || !privada) return false;
   if (!configurado) {
     webpush.setVapidDetails(contacto, publica, privada);
