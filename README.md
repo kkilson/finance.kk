@@ -61,25 +61,50 @@ npm run dev
 
 ### 1. Supabase
 
-Crear el proyecto y copiar las dos cadenas de conexión (Project Settings →
-Database). Son distintas y ambas hacen falta:
+Crear el proyecto y copiar las cadenas de conexión (Project Settings →
+Database). Hacen falta dos, y **ninguna de las dos es la que Supabase muestra
+primero**:
 
-| Variable | Puerto | Para qué |
+| Variable | Cadena | Para qué |
 |---|---|---|
-| `DATABASE_URL` | 6543 (pooler) | La app en runtime |
-| `DIRECT_URL` | 5432 (directa) | Migraciones y seed |
+| `DATABASE_URL` | Transaction pooler, puerto **6543** | La app en runtime |
+| `DIRECT_URL` | Session pooler, puerto **5432** | Migraciones y seed |
 
-Prisma Migrate usa locks de sesión que el pooler en modo transacción no
-soporta, por eso van separadas. El código detecta solo cuándo está hablando con
-el pooler y desactiva los prepared statements; si no, las consultas empiezan a
-fallar de forma intermitente.
+El host `db.<ref>.supabase.co` que aparece como "Direct connection" **resuelve
+solo a IPv6**. No sirve ni desde una red doméstica típica ni desde Vercel, que
+sale por IPv4. Las dos variables tienen que apuntar al host
+`aws-N-<region>.pooler.supabase.com`, cambiando el puerto.
 
-Cargar el esquema y las categorías desde tu máquina, apuntando a Supabase:
+Los dos poolers no son intercambiables: el de transacción reparte cada consulta
+entre conexiones distintas, así que `prisma migrate deploy` se queda colgado
+contra él (los locks que usa son de sesión). Por eso las migraciones van por el
+de sesión. En runtime, en cambio, el de transacción es el correcto, y el código
+detecta solo que está hablando con él para desactivar los prepared statements;
+sin eso las consultas fallan de forma intermitente.
+
+Cargar el esquema y las categorías desde tu máquina:
 
 ```bash
 npx prisma migrate deploy
 npm run db:seed
 ```
+
+Si tu red bloquea el puerto 5432 y no puedes usar el session pooler, las
+migraciones se pueden aplicar a mano ejecutando cada `prisma/migrations/*/migration.sql`
+y registrándolas en la tabla `_prisma_migrations` con el sha256 del archivo
+como `checksum`.
+
+### Cambiar la contraseña del usuario
+
+El seed crea el usuario con la contraseña por defecto `rumbo1234`, que está
+escrita acá y este repo es público. Cámbiala antes de exponer la app:
+
+```bash
+npm run pass:cambiar -- tu@correo.com "una contraseña larga"
+```
+
+Volver a correr el seed **no** la cambia: usa `upsert` y no toca el usuario
+existente a propósito.
 
 ### 2. Vercel
 
@@ -94,8 +119,11 @@ las franjas horarias de las notificaciones se evalúan con la hora local del
 proceso: sin esa variable los avisos salen corridos cuatro horas y nada falla
 de forma visible.
 
-El `vercel-build` corre `prisma migrate deploy` antes del build, así que cada
-deploy aplica las migraciones pendientes solo.
+El `vercel-build` aplica las migraciones pendientes antes de compilar, pero
+solo si `DIRECT_URL` apunta a algo que las soporte. Si falta o apunta al pooler
+de transacción, avisa en el log y sigue con el build en vez de romper el
+deploy — el precio es que el esquema puede quedar desactualizado, así que
+conviene revisar ese aviso.
 
 ### 3. El cron en Vercel
 
@@ -181,6 +209,7 @@ puede corregir), muestra las primeras filas y recién ahí escribe.
 | `npm run db:studio` | Explorador de la base de datos |
 | `npm run vapid:generar` | Par de llaves VAPID para Web Push |
 | `npm run cron` | Job de notificaciones en local |
+| `npm run pass:cambiar` | Cambiar la contraseña de un usuario |
 
 ## Estructura
 
