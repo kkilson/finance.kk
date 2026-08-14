@@ -1,0 +1,292 @@
+// Esquema Rumbo — Fases 0-3 (sección 3 de la Spec Técnica).
+// Las tablas de notificaciones (Fase 4) se agregan después, a propósito.
+
+// Prisma 7: la URL de conexión vive en prisma.config.ts, no aquí.
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum TipoCuenta {
+  BANCO
+  WALLET
+  EFECTIVO
+  CRIPTO
+}
+
+enum Moneda {
+  BS
+  USD
+}
+
+enum TipoCategoria {
+  GASTO
+  INGRESO
+}
+
+enum TipoMovimiento {
+  INGRESO
+  GASTO
+  TRANSFERENCIA
+}
+
+enum TipoDeuda {
+  TARJETA
+  PRESTAMO_CUOTAS
+  PRESTAMO_INFORMAL
+  BNPL
+}
+
+enum FrecuenciaCuota {
+  MENSUAL
+  QUINCENAL
+}
+
+enum TipoCompromiso {
+  PAGO
+  INGRESO_ESPERADO
+}
+
+enum EstadoCompromiso {
+  PENDIENTE
+  PAGADO
+  COBRADO
+  ATRASADO
+}
+
+model Usuario {
+  id                      String   @id @default(cuid())
+  nombre                  String
+  email                   String   @unique
+  passwordHash            String
+  monedaReferenciaDefault Moneda   @default(USD)
+  saldoMinimoSeguridad    Decimal  @default(0) @db.Decimal(12, 2)
+  umbralEndeudamiento     Decimal  @default(0.35) @db.Decimal(4, 2)
+  // % del saldo usado que se asume como pago mínimo de tarjeta (sección 4.2)
+  pctPagoMinimoTarjeta    Decimal  @default(0.10) @db.Decimal(4, 2)
+  createdAt               DateTime @default(now())
+
+  cuentas       Cuenta[]
+  categorias    Categoria[]
+  movimientos   Movimiento[]
+  deudas        DeudaPrestamo[]
+  compromisos   CompromisoPresupuesto[]
+  notifConfigs  NotificacionConfig[]
+  dispositivos  DispositivoPush[]
+  notificaciones NotificacionEnviada[]
+}
+
+model Cuenta {
+  id          String     @id @default(cuid())
+  usuarioId   String
+  usuario     Usuario    @relation(fields: [usuarioId], references: [id])
+  nombre      String
+  tipo        TipoCuenta
+  moneda      Moneda
+  saldoActual Decimal    @default(0) @db.Decimal(14, 2)
+  favorita    Boolean    @default(false)
+  activa      Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+
+  movimientos        Movimiento[] @relation("MovimientoCuentaOrigen")
+  movimientosDestino Movimiento[] @relation("MovimientoCuentaDestino")
+
+  @@index([usuarioId])
+}
+
+model Categoria {
+  id                  String        @id @default(cuid())
+  usuarioId           String
+  usuario             Usuario       @relation(fields: [usuarioId], references: [id])
+  nombre              String
+  tipo                TipoCategoria
+  grupoId             String?
+  grupo               Categoria?    @relation("GrupoSubcategorias", fields: [grupoId], references: [id])
+  subcategorias       Categoria[]   @relation("GrupoSubcategorias")
+  icono               String?
+  color               String?
+  esRecurrenteDefault Boolean       @default(false)
+  archivada           Boolean       @default(false)
+
+  movimientos Movimiento[]
+  compromisos CompromisoPresupuesto[]
+
+  @@index([usuarioId])
+}
+
+model Movimiento {
+  id                 String                 @id @default(cuid())
+  usuarioId          String
+  usuario            Usuario                @relation(fields: [usuarioId], references: [id])
+  cuentaId           String
+  cuenta             Cuenta                 @relation("MovimientoCuentaOrigen", fields: [cuentaId], references: [id])
+  // Solo para tipo = TRANSFERENCIA (decisión de implementación, sección 5)
+  cuentaDestinoId    String?
+  cuentaDestino      Cuenta?                @relation("MovimientoCuentaDestino", fields: [cuentaDestinoId], references: [id])
+  categoriaId        String?
+  categoria          Categoria?             @relation(fields: [categoriaId], references: [id])
+  tipo               TipoMovimiento
+  monto              Decimal                @db.Decimal(14, 2)
+  moneda             Moneda
+  tasaCambioAplicada Decimal?               @db.Decimal(10, 4)
+  fecha              DateTime
+  nota               String?
+  esFijo             Boolean                @default(false)
+  esRecurrente       Boolean                @default(false)
+  esExtraordinario   Boolean                @default(false)
+  compromisoId       String?                @unique
+  compromiso         CompromisoPresupuesto? @relation(fields: [compromisoId], references: [id])
+  createdAt          DateTime               @default(now())
+
+  pagosDeuda PagoDeuda[]
+
+  @@index([usuarioId, fecha])
+  @@index([categoriaId])
+}
+
+model DeudaPrestamo {
+  id                 String    @id @default(cuid())
+  usuarioId          String
+  usuario            Usuario   @relation(fields: [usuarioId], references: [id])
+  nombre             String
+  tipo               TipoDeuda
+  entidad            String
+  montoOriginal      Decimal   @db.Decimal(14, 2)
+  saldoRestante      Decimal   @db.Decimal(14, 2)
+  tasaInteresMensual Decimal?  @db.Decimal(6, 4)
+  moneda             Moneda
+  limite             Decimal?  @db.Decimal(14, 2)
+  pagoMinimoMensual  Decimal?  @db.Decimal(14, 2)
+  fechaProximoPago   DateTime?
+  diaCierre          Int?
+  activa             Boolean   @default(true)
+
+  // Campos específicos BNPL (Cashea, Krece, Chollo, Lysto)
+  plataformaBnpl     String?
+  nivelUsuario       String?
+  pctInicial         Decimal?        @db.Decimal(5, 2)
+  numeroCuotas       Int?
+  frecuenciaCuota    FrecuenciaCuota @default(MENSUAL)
+  penalidadPorAtraso Decimal?        @db.Decimal(14, 2)
+  comercioAfiliado   String?
+  producto           String?
+
+  createdAt   DateTime                @default(now())
+  pagos       PagoDeuda[]
+  compromisos CompromisoPresupuesto[]
+
+  @@index([usuarioId])
+}
+
+model PagoDeuda {
+  id                String        @id @default(cuid())
+  deudaId           String
+  deuda             DeudaPrestamo @relation(fields: [deudaId], references: [id])
+  movimientoId      String        @unique
+  movimiento        Movimiento    @relation(fields: [movimientoId], references: [id])
+  monto             Decimal       @db.Decimal(14, 2)
+  fecha             DateTime
+  interesIncluido   Decimal?      @db.Decimal(14, 2)
+  penalidadIncluida Decimal?      @db.Decimal(14, 2)
+}
+
+model CompromisoPresupuesto {
+  id            String           @id @default(cuid())
+  usuarioId     String
+  usuario       Usuario          @relation(fields: [usuarioId], references: [id])
+  tipo          TipoCompromiso
+  concepto      String
+  categoriaId   String?
+  categoria     Categoria?       @relation(fields: [categoriaId], references: [id])
+  deudaId       String?
+  deuda         DeudaPrestamo?   @relation(fields: [deudaId], references: [id])
+  monto         Decimal          @db.Decimal(14, 2)
+  moneda        Moneda
+  fechaEsperada DateTime
+  mesPeriodo    String // formato "2026-08"
+  estado        EstadoCompromiso @default(PENDIENTE)
+  esRecurrente  Boolean          @default(false)
+
+  movimiento Movimiento?
+
+  @@index([usuarioId, mesPeriodo])
+}
+
+enum TipoRegla {
+  PAGO_POR_VENCER
+  PAGO_ATRASADO
+  INGRESO_ESPERADO_HOY
+  COBERTURA_EN_ROJO
+  RITMO_DE_GASTO_ALTO
+  TARJETA_CERCA_DEL_LIMITE
+  CUOTA_BNPL_POR_VENCER
+  CAPACIDAD_EXCEDIDA
+}
+
+enum PlataformaDispositivo {
+  WEB
+  ANDROID
+  IOS
+}
+
+model NotificacionConfig {
+  id        String    @id @default(cuid())
+  usuarioId String
+  usuario   Usuario   @relation(fields: [usuarioId], references: [id])
+  regla     TipoRegla
+  activa    Boolean   @default(true)
+  /// Días de anticipación (reglas de vencimiento) o umbral en % (ritmo, límite).
+  parametro Decimal?  @db.Decimal(8, 2)
+  /// Hora local a la que se permite notificar, 0-23.
+  horaDesde Int       @default(8)
+  horaHasta Int       @default(21)
+
+  @@unique([usuarioId, regla])
+}
+
+model DispositivoPush {
+  id          String                @id @default(cuid())
+  usuarioId   String
+  usuario     Usuario               @relation(fields: [usuarioId], references: [id])
+  plataforma  PlataformaDispositivo @default(WEB)
+  /// endpoint de Web Push, o token FCM cuando llegue Flutter (Fase 6).
+  endpoint    String                @unique
+  claveP256dh String?
+  claveAuth   String?
+  etiqueta    String?
+  activo      Boolean               @default(true)
+  createdAt   DateTime              @default(now())
+  ultimoUso   DateTime?
+
+  notificaciones NotificacionEnviada[]
+}
+
+model NotificacionEnviada {
+  id            String           @id @default(cuid())
+  usuarioId     String
+  usuario       Usuario          @relation(fields: [usuarioId], references: [id])
+  regla         TipoRegla
+  titulo        String
+  cuerpo        String
+  /// Identifica el hecho concreto (p.ej. "compromiso:abc123:3d") para no repetir.
+  claveDedup    String
+  enviadaEn     DateTime         @default(now())
+  entregada     Boolean          @default(false)
+  error         String?
+  dispositivoId String?
+  dispositivo   DispositivoPush? @relation(fields: [dispositivoId], references: [id])
+
+  @@index([usuarioId, regla, enviadaEn])
+  @@unique([usuarioId, claveDedup])
+}
+
+model TasaCambio {
+  id            String   @id @default(cuid())
+  fecha         DateTime @default(now())
+  valorBsPorUsd Decimal  @db.Decimal(10, 4)
+  fuente        String // BCV | paralelo | manual
+}

@@ -1,0 +1,55 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: rumbo
+      POSTGRES_PASSWORD: rumbo
+      POSTGRES_DB: rumbo
+      # Obligatorio: los íconos de las categorías son emoji y una base en
+      # WIN1252/LATIN1 los rechaza al insertarlos.
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    ports:
+      - "5432:5432"
+    volumes:
+      - rumbo_db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rumbo"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://rumbo:rumbo@db:5432/rumbo
+      AUTH_SECRET: ${AUTH_SECRET:?define AUTH_SECRET en .env}
+      DEFAULT_MONEDA_REFERENCIA: USD
+      NODE_ENV: production
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${NEXT_PUBLIC_VAPID_PUBLIC_KEY:-}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:rumbo@localhost}
+      CRON_SECRET: ${CRON_SECRET:?define CRON_SECRET en .env}
+    ports:
+      - "3000:3000"
+
+  # Job horario de notificaciones (Fase 4). Contenedor aparte para que un
+  # reinicio de la app no deje el scheduler colgado a medias.
+  cron:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      - app
+    command: ["npx", "tsx", "scripts/cron.ts"]
+    environment:
+      CRON_TARGET_URL: http://app:3000
+      CRON_SECRET: ${CRON_SECRET:?define CRON_SECRET en .env}
+      CRON_SCHEDULE: ${CRON_SCHEDULE:-0 * * * *}
+
+volumes:
+  rumbo_db:

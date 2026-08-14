@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+/*
+ * Tokens tomados de rumbo-finanzas-prototipo.html (bloque :root).
+ * Con Tailwind v4 la configuración vive en CSS, así que este @theme es el
+ * equivalente del tailwind.config.ts que pedía la spec.
+ */
+@theme {
+  --color-bg: #f5f6f3;
+  --color-surface: #ffffff;
+  --color-surface-2: #eef1ec;
+  --color-ink: #182220;
+  --color-ink-soft: #5b6864;
+  --color-line: #dfe4de;
+
+  --color-teal: #0f5257;
+  --color-teal-deep: #0a3a3e;
+  --color-gold: #c9962c;
+  --color-gold-soft: #f3e4c2;
+  --color-danger: #c1483d;
+  --color-danger-soft: #f6deda;
+  --color-success: #3f7a50;
+  --color-success-soft: #deebe0;
+
+  --radius-card: 14px;
+  --radius-card-lg: 20px;
+
+  --font-display: var(--font-outfit), sans-serif;
+  --font-sans: var(--font-inter), sans-serif;
+  --font-mono: var(--font-plex-mono), monospace;
+}
+
+html,
+body {
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: 14px;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+}
+
+/* Cifras siempre en monoespaciada, como en el prototipo. */
+.num {
+  font-family: var(--font-mono);
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

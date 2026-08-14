@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rumbo — Finanzas personales</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#F5F6F3;
+  --surface:#FFFFFF;
+  --surface-2:#EEF1EC;
+  --ink:#182220;
+  --ink-soft:#5B6864;
+  --line:#DFE4DE;
+  --teal:#0F5257;
+  --teal-deep:#0A3A3E;
+  --gold:#C9962C;
+  --gold-soft:#F3E4C2;
+  --danger:#C1483D;
+  --danger-soft:#F6DEDA;
+  --success:#3F7A50;
+  --success-soft:#DEEBE0;
+  --radius:14px;
+  --radius-lg:20px;
+}
+*{box-sizing:border-box;}
+@media (prefers-reduced-motion: reduce){ *{animation:none !important; transition:none !important;} }
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--ink);
+  font-family:'Inter',sans-serif;
+  font-size:14px;
+}
+h1,h2,h3,.display{ font-family:'Outfit',sans-serif; }
+.num{ font-family:'IBM Plex Mono',monospace; letter-spacing:-0.02em; }
+
+/* ---------- SHELL ---------- */
+.shell{ display:flex; min-height:100vh; }
+.sidebar{
+  width:220px; flex-shrink:0; background:var(--teal-deep); color:#EAF3F1;
+  display:flex; flex-direction:column; padding:22px 14px;
+}
+.brand{ display:flex; align-items:center; gap:10px; padding:0 8px 22px 8px; }
+.brand-mark{
+  width:34px; height:34px; border-radius:9px; background:linear-gradient(135deg,var(--gold),#E8C066);
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.brand-mark svg{ width:18px; height:18px; }
+.brand-name{ font-family:'Outfit',sans-serif; font-weight:700; font-size:17px; letter-spacing:-0.01em; }
+.brand-sub{ font-size:11px; color:#9FC2BE; margin-top:-2px; }
+
+nav{ display:flex; flex-direction:column; gap:3px; margin-top:6px; }
+.nav-item{
+  display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px;
+  color:#C7DEDB; cursor:pointer; font-size:13.5px; font-weight:500; border:none; background:none; text-align:left; width:100%;
+  transition:background .15s, color .15s;
+}
+.nav-item svg{ width:17px; height:17px; flex-shrink:0; opacity:.85; }
+.nav-item:hover{ background:rgba(255,255,255,.06); color:#fff; }
+.nav-item.active{ background:var(--gold); color:var(--teal-deep); font-weight:600; }
+.nav-item.active svg{ opacity:1; }
+
+.sidebar-footer{ margin-top:auto; padding:14px 10px 4px; border-top:1px solid rgba(255,255,255,.1); }
+.currency-toggle{ display:flex; gap:6px; }
+.ct-btn{
+  flex:1; padding:7px 0; border-radius:8px; border:1px solid rgba(255,255,255,.15); background:transparent;
+  color:#9FC2BE; font-size:12px; font-weight:600; cursor:pointer;
+}
+.ct-btn.active{ background:rgba(255,255,255,.12); color:#fff; border-color:transparent; }
+
+.main{ flex:1; padding:26px 34px 60px; max-width:1180px; }
+.topbar{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:22px; }
+.topbar h1{ font-size:23px; margin:0 0 3px; font-weight:700; }
+.topbar p{ margin:0; color:var(--ink-soft); font-size:13.5px; }
+.date-chip{
+  background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:8px 14px;
+  font-size:12.5px; color:var(--ink-soft); display:flex; align-items:center; gap:8px;
+}
+
+.view{ display:none; animation:fadeIn .25s ease; }
+.view.active{ display:block; }
+@keyframes fadeIn{ from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);} }
+
+/* ---------- CARDS / GRID ---------- */
+.grid{ display:grid; gap:16px; }
+.grid-4{ grid-template-columns:repeat(4,1fr); }
+.grid-3{ grid-template-columns:repeat(3,1fr); }
+.grid-2{ grid-template-columns:1.3fr .7fr; }
+.card{
+  background:var(--surface); border:1px solid var(--line); border-radius:var(--radius-lg);
+  padding:18px 20px;
+}
+.card-title{ font-size:13px; font-weight:600; color:var(--ink-soft); margin:0 0 4px; text-transform:uppercase; letter-spacing:.04em; }
+.card-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+.card-head h3{ font-size:15px; margin:0; font-weight:700; }
+.pill{ font-size:11px; font-weight:600; padding:3px 9px; border-radius:20px; }
+.pill.success{ background:var(--success-soft); color:var(--success); }
+.pill.danger{ background:var(--danger-soft); color:var(--danger); }
+.pill.neutral{ background:var(--surface-2); color:var(--ink-soft); }
+
+/* KPI cards */
+.kpi-value{ font-size:26px; font-weight:700; margin:2px 0 6px; }
+.kpi-sub{ font-size:12px; color:var(--ink-soft); display:flex; align-items:center; gap:5px; }
+.kpi-sub.up{ color:var(--success); }
+.kpi-sub.down{ color:var(--danger); }
+
+/* Runway gauge - signature element */
+.gauge-card{ background:linear-gradient(135deg,var(--teal-deep),var(--teal)); color:#fff; border:none; position:relative; overflow:hidden; }
+.gauge-card::after{
+  content:""; position:absolute; right:-40px; top:-40px; width:160px; height:160px; border-radius:50%;
+  background:radial-gradient(circle,rgba(201,150,44,.35),transparent 70%);
+}
+.gauge-wrap{ display:flex; align-items:center; gap:18px; position:relative; z-index:1; }
+.gauge-svg{ width:110px; height:110px; flex-shrink:0; }
+.gauge-days{ font-size:30px; font-weight:800; font-family:'Outfit'; }
+.gauge-label{ font-size:11.5px; color:#B9D8D4; text-transform:uppercase; letter-spacing:.05em; margin-bottom:2px; }
+.gauge-desc{ font-size:12.5px; color:#D8ECE9; margin-top:8px; line-height:1.5; }
+
+/* charts */
+.chart-box{ position:relative; height:230px; }
+.chart-box.sm{ height:180px; }
+
+/* lists */
+.cat-row{ display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--line); }
+.cat-row:last-child{ border-bottom:none; }
+.cat-icon{ width:34px; height:34px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; }
+.cat-info{ flex:1; min-width:0; }
+.cat-name{ font-weight:600; font-size:13.5px; }
+.cat-bar{ height:5px; background:var(--surface-2); border-radius:3px; margin-top:5px; overflow:hidden; }
+.cat-bar-fill{ height:100%; border-radius:3px; }
+.cat-amount{ text-align:right; font-weight:600; font-size:13.5px; }
+.cat-pct{ font-size:11px; color:var(--ink-soft); text-align:right; }
+
+/* alerts */
+.alert{ display:flex; gap:11px; padding:12px 14px; border-radius:12px; align-items:flex-start; margin-bottom:10px; }
+.alert.warn{ background:var(--danger-soft); }
+.alert.ok{ background:var(--success-soft); }
+.alert-icon{ font-size:15px; margin-top:1px; }
+.alert-text b{ display:block; font-size:13px; margin-bottom:1px; }
+.alert-text span{ font-size:12px; color:var(--ink-soft); }
+
+/* ---------- PRESUPUESTO / CALENDAR ---------- */
+.month-switch{ display:flex; align-items:center; gap:12px; }
+.month-switch button{ background:var(--surface-2); border:none; width:30px; height:30px; border-radius:8px; cursor:pointer; font-size:14px; }
+.cal-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:6px; margin-top:10px; }
+.cal-dow{ font-size:11px; text-align:center; color:var(--ink-soft); font-weight:600; padding-bottom:4px; }
+.cal-day{ min-height:64px; border-radius:10px; background:var(--surface-2); padding:6px 6px; font-size:11px; position:relative; }
+.cal-day.empty{ background:transparent; }
+.cal-day .d-num{ font-weight:600; font-size:11.5px; color:var(--ink-soft); }
+.cal-day.today{ background:var(--teal); color:#fff; }
+.cal-day.today .d-num{ color:#fff; }
+.cal-tag{ display:block; margin-top:3px; padding:2px 5px; border-radius:5px; font-size:9.5px; font-weight:600; line-height:1.3; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.cal-tag.pago{ background:var(--danger-soft); color:var(--danger); }
+.cal-tag.ingreso{ background:var(--success-soft); color:var(--success); }
+.cal-day.today .cal-tag{ background:rgba(255,255,255,.2); color:#fff; }
+
+.bill-table{ width:100%; border-collapse:collapse; }
+.bill-table th{ text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); padding:0 10px 8px; border-bottom:1px solid var(--line); }
+.bill-table td{ padding:11px 10px; border-bottom:1px solid var(--line); font-size:13px; vertical-align:middle; }
+.bill-table tr:last-child td{ border-bottom:none; }
+.status-dot{ width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:6px; }
+.check-box{ width:18px; height:18px; border-radius:5px; border:1.5px solid var(--line); display:inline-flex; align-items:center; justify-content:center; cursor:pointer; }
+.check-box.done{ background:var(--success); border-color:var(--success); color:#fff; font-size:11px; }
+
+/* ---------- CUENTAS ---------- */
+.acct-tabs{ display:flex; gap:8px; margin-bottom:16px; }
+.acct-tab{ padding:8px 16px; border-radius:20px; border:1px solid var(--line); background:var(--surface); font-size:13px; font-weight:600; cursor:pointer; color:var(--ink-soft); }
+.acct-tab.active{ background:var(--teal); color:#fff; border-color:var(--teal); }
+.acct-card{ display:flex; align-items:center; gap:14px; padding:14px 16px; border:1px solid var(--line); border-radius:14px; margin-bottom:10px; background:var(--surface); }
+.acct-logo{ width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; }
+.acct-name{ font-weight:600; font-size:13.5px; }
+.acct-type{ font-size:11.5px; color:var(--ink-soft); }
+.acct-amt{ margin-left:auto; text-align:right; }
+.acct-amt .num{ font-weight:700; font-size:15px; }
+.acct-amt .conv{ font-size:11px; color:var(--ink-soft); }
+
+/* ---------- DEUDAS ---------- */
+.debt-card{ border:1px solid var(--line); border-radius:14px; padding:16px 18px; margin-bottom:12px; background:var(--surface); }
+.debt-top{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; }
+.debt-name{ font-weight:700; font-size:14.5px; }
+.debt-lender{ font-size:12px; color:var(--ink-soft); }
+.debt-stats{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-top:10px; }
+.debt-stat-label{ font-size:10.5px; text-transform:uppercase; color:var(--ink-soft); letter-spacing:.03em; margin-bottom:2px; }
+.debt-stat-val{ font-weight:700; font-size:14px; }
+.progress-track{ height:7px; background:var(--surface-2); border-radius:4px; margin-top:12px; overflow:hidden; }
+.progress-fill{ height:100%; background:var(--teal); border-radius:4px; }
+
+/* ---------- CATEGORIAS ---------- */
+.catg-toggle{ display:flex; gap:8px; margin-bottom:18px; }
+.catg-toggle button{ padding:8px 18px; border-radius:20px; border:1px solid var(--line); background:var(--surface); font-weight:600; font-size:13px; cursor:pointer; color:var(--ink-soft); }
+.catg-toggle button.active.gastos{ background:var(--danger); color:#fff; border-color:var(--danger); }
+.catg-toggle button.active.ingresos{ background:var(--success); color:#fff; border-color:var(--success); }
+.catg-group{ background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:16px 18px; margin-bottom:14px; }
+.catg-group-head{ display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+.catg-group-icon{ width:32px; height:32px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:15px; }
+.catg-group-name{ font-weight:700; font-size:14.5px; }
+.chip-row{ display:flex; flex-wrap:wrap; gap:8px; }
+.chip{ padding:7px 13px; border-radius:20px; font-size:12.5px; font-weight:500; display:flex; align-items:center; gap:6px; }
+.add-cat-btn{ background:var(--gold); color:var(--teal-deep); border:none; padding:11px 20px; border-radius:24px; font-weight:700; font-size:13px; cursor:pointer; display:flex; align-items:center; gap:6px; margin:6px auto 0; }
+
+footer.note{ text-align:center; color:var(--ink-soft); font-size:11.5px; margin-top:28px; }
+
+@media (max-width: 980px){
+  .sidebar{ display:none; }
+  .main{ padding:18px; }
+  .grid-4, .grid-3, .grid-2, .debt-stats{ grid-template-columns:1fr 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark"><svg viewBox="0 0 24 24" fill="none"><path d="M4 18L10 10L14 14L20 6" stroke="#0A3A3E" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div>
+        <div class="brand-name">Rumbo</div>
+        <div class="brand-sub">finanzas personales</div>
+      </div>
+    </div>
+    <nav>
+      <button class="nav-item active" data-view="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg> Dashboard</button>
+      <button class="nav-item" data-view="presupuesto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg> Presupuesto</button>
+      <button class="nav-item" data-view="cuentas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="13" rx="2"/><path d="M2 10h20"/><circle cx="17" cy="14.5" r="1.5" fill="currentColor" stroke="none"/></svg> Cuentas</button>
+      <button class="nav-item" data-view="deudas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5.5C17 4 14.8 3 12 3s-5 1.2-5 3 2 2.6 5 3.3 5 2 5 3.4-2.2 3.3-5 3.3-5-1-5-2.5"/></svg> Deudas y préstamos</button>
+      <button class="nav-item" data-view="categorias"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg> Categorías</button>
+    </nav>
+    <div class="sidebar-footer">
+      <div style="font-size:11px;color:#9FC2BE;margin-bottom:8px;">Moneda de referencia</div>
+      <div class="currency-toggle">
+        <button class="ct-btn active" data-cur="USD">USD</button>
+        <button class="ct-btn" data-cur="BS">Bs</button>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <!-- ===================== DASHBOARD ===================== -->
+    <section class="view active" id="view-dashboard">
+      <div class="topbar">
+        <div>
+          <h1>Hola — así estás cerrando agosto</h1>
+          <p>Resumen general de tus finanzas, actualizado con tus movimientos del mes</p>
+        </div>
+        <div class="date-chip">📅 Agosto 2026</div>
+      </div>
+
+      <div class="grid grid-4" style="margin-bottom:16px;">
+        <div class="card">
+          <div class="card-title">Balance total</div>
+          <div class="kpi-value num">$168.42</div>
+          <div class="kpi-sub up">↑ 4.2% vs mes pasado</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Ingresos del mes</div>
+          <div class="kpi-value num" style="color:var(--success)">$640.00</div>
+          <div class="kpi-sub">Fijo $520 · Variable $120</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Gastos del mes</div>
+          <div class="kpi-value num" style="color:var(--danger)">$487.30</div>
+          <div class="kpi-sub down">76% de tus ingresos</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Disponible para gastar hoy</div>
+          <div class="kpi-value num">$6.10<span style="font-size:13px;color:var(--ink-soft);font-weight:500;">/día</span></div>
+          <div class="kpi-sub">Hasta tu próximo ingreso</div>
+        </div>
+      </div>
+
+      <div class="grid grid-2" style="margin-bottom:16px;">
+        <div class="card gauge-card">
+          <div class="card-title" style="color:#B9D8D4;">Salud financiera</div>
+          <div class="gauge-wrap">
+            <svg class="gauge-svg" viewBox="0 0 120 120">
+              <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,.15)" stroke-width="10"/>
+              <circle cx="60" cy="60" r="50" fill="none" stroke="#C9962C" stroke-width="10" stroke-linecap="round"
+                stroke-dasharray="314" stroke-dashoffset="90" transform="rotate(-90 60 60)"/>
+              <text x="60" y="56" text-anchor="middle" font-family="Outfit" font-weight="800" font-size="26" fill="#fff">18</text>
+              <text x="60" y="74" text-anchor="middle" font-family="Inter" font-size="9" fill="#B9D8D4">días</text>
+            </svg>
+            <div>
+              <div class="gauge-label">Cobertura actual</div>
+              <div class="gauge-days">18 días de cobertura</div>
+              <div class="gauge-desc">Con tu balance disponible y tus gastos fijos restantes, puedes cubrir tus compromisos <b>18 días</b> más sin recibir nuevos ingresos. Tu próximo ingreso fijo llega antes de que esto se agote.</div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h3>Avisos</h3></div>
+          <div class="alert warn">
+            <div class="alert-icon">⚠️</div>
+            <div class="alert-text"><b>Tarjeta Mercantil al 82% del límite</b><span>Vence el 28 de agosto · $410 de $500</span></div>
+          </div>
+          <div class="alert warn">
+            <div class="alert-icon">⏰</div>
+            <div class="alert-text"><b>Condominio vence en 3 días</b><span>$45.00 · categoría Casa</span></div>
+          </div>
+          <div class="alert ok">
+            <div class="alert-icon">✅</div>
+            <div class="alert-text"><b>Puedes cubrir un gasto nuevo de hasta $60</b><span>Sin afectar tus pagos fijos pendientes</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="card">
+          <div class="card-head"><h3>Dónde se está yendo tu dinero</h3><span class="pill neutral">Este mes</span></div>
+          <div class="chart-box"><canvas id="chartCategorias"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h3>Top categorías</h3></div>
+          <div class="cat-row">
+            <div class="cat-icon" style="background:#EAF2E9;">🏠</div>
+            <div class="cat-info"><div class="cat-name">Casa</div><div class="cat-bar"><div class="cat-bar-fill" style="width:82%;background:#3F7A50;"></div></div></div>
+            <div><div class="cat-amount num">$160.00</div><div class="cat-pct">33%</div></div>
+          </div>
+          <div class="cat-row">
+            <div class="cat-icon" style="background:#FBEFE3;">🍽️</div>
+            <div class="cat-info"><div class="cat-name">Alimentación</div><div class="cat-bar"><div class="cat-bar-fill" style="width:60%;background:#C9962C;"></div></div></div>
+            <div><div class="cat-amount num">$118.00</div><div class="cat-pct">24%</div></div>
+          </div>
+          <div class="cat-row">
+            <div class="cat-icon" style="background:#EFEBF7;">🚗</div>
+            <div class="cat-info"><div class="cat-name">Transporte</div><div class="cat-bar"><div class="cat-bar-fill" style="width:38%;background:#7C6BC4;"></div></div></div>
+            <div><div class="cat-amount num">$74.20</div><div class="cat-pct">15%</div></div>
+          </div>
+          <div class="cat-row">
+            <div class="cat-icon" style="background:#FCE9E9;">💳</div>
+            <div class="cat-info"><div class="cat-name">Pago de deuda</div><div class="cat-bar"><div class="cat-bar-fill" style="width:30%;background:#C1483D;"></div></div></div>
+            <div><div class="cat-amount num">$58.00</div><div class="cat-pct">12%</div></div>
+          </div>
+          <div class="cat-row">
+            <div class="cat-icon" style="background:#FBF3D9;">🎭</div>
+            <div class="cat-info"><div class="cat-name">Entretenimiento</div><div class="cat-bar"><div class="cat-bar-fill" style="width:19%;background:#D9A83B;"></div></div></div>
+            <div><div class="cat-amount num">$37.10</div><div class="cat-pct">8%</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px;">
+        <div class="card-head"><h3>Ingresos vs. gastos — últimos 6 meses</h3></div>
+        <div class="chart-box"><canvas id="chartTendencia"></canvas></div>
+      </div>
+    </section>
+
+    <!-- ===================== PRESUPUESTO ===================== -->
+    <section class="view" id="view-presupuesto">
+      <div class="topbar">
+        <div>
+          <h1>Presupuesto de agosto</h1>
+          <p>Todo lo que debes pagar este mes y cuándo esperas cada ingreso</p>
+        </div>
+        <div class="month-switch">
+          <button>‹</button>
+          <div class="date-chip" style="border:none;background:var(--surface-2);">Agosto 2026</div>
+          <button>›</button>
+        </div>
+      </div>
+
+      <div class="grid grid-3" style="margin-bottom:16px;">
+        <div class="card">
+          <div class="card-title">Presupuestado este mes</div>
+          <div class="kpi-value num">$610.00</div>
+          <div class="kpi-sub">14 compromisos activos</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Pagado hasta hoy</div>
+          <div class="kpi-value num" style="color:var(--success)">$385.00</div>
+          <div class="kpi-sub">9 de 14 compromisos</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Pendiente por pagar</div>
+          <div class="kpi-value num" style="color:var(--danger)">$225.00</div>
+          <div class="kpi-sub">5 compromisos restantes</div>
+        </div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="card">
+          <div class="card-head"><h3>Calendario del mes</h3>
+            <div style="display:flex;gap:10px;font-size:11px;color:var(--ink-soft);">
+              <span><span style="display:inline-block;width:8px;height:8px;background:var(--danger);border-radius:2px;margin-right:4px;"></span>Pago</span>
+              <span><span style="display:inline-block;width:8px;height:8px;background:var(--success);border-radius:2px;margin-right:4px;"></span>Ingreso</span>
+            </div>
+          </div>
+          <div class="cal-grid" id="calGrid"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h3>Cuentas por pagar</h3></div>
+          <table class="bill-table">
+            <thead><tr><th></th><th>Concepto</th><th>Vence</th><th>Monto</th></tr></thead>
+            <tbody>
+              <tr><td><div class="check-box done">✓</div></td><td>Alquiler oficina</td><td>05 ago</td><td class="num">$180.00</td></tr>
+              <tr><td><div class="check-box done">✓</div></td><td>Internet y teléfono</td><td>08 ago</td><td class="num">$35.00</td></tr>
+              <tr><td><div class="check-box"></div></td><td>Condominio</td><td>16 ago</td><td class="num">$45.00</td></tr>
+              <tr><td><div class="check-box"></div></td><td>Tarjeta Mercantil (mínimo)</td><td>28 ago</td><td class="num">$120.00</td></tr>
+              <tr><td><div class="check-box"></div></td><td>Cuota préstamo Zinli</td><td>30 ago</td><td class="num">$60.00</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px;">
+        <div class="card-head"><h3>Ingresos esperados</h3></div>
+        <table class="bill-table">
+          <thead><tr><th>Origen</th><th>Tipo</th><th>Fecha estimada</th><th>Monto</th></tr></thead>
+          <tbody>
+            <tr><td>Salario Deepcompany</td><td><span class="pill success">Fijo</span></td><td>01 sep</td><td class="num">$520.00</td></tr>
+            <tr><td>Freelance — recruitment Mercantil</td><td><span class="pill neutral">Variable</span></td><td>05 sep</td><td class="num">$120.00</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===================== CUENTAS ===================== -->
+    <section class="view" id="view-cuentas">
+      <div class="topbar">
+        <div>
+          <h1>Cuentas</h1>
+          <p>Todos tus saldos en un mismo lugar, en bolívares y en dólares</p>
+        </div>
+      </div>
+
+      <div class="grid grid-3" style="margin-bottom:18px;">
+        <div class="card">
+          <div class="card-title">Balance total</div>
+          <div class="kpi-value num">$168.42</div>
+        </div>
+        <div class="card">
+          <div class="card-title">En bolívares</div>
+          <div class="kpi-value num">Bs 84,320</div>
+          <div class="kpi-sub">≈ $109.90</div>
+        </div>
+        <div class="card">
+          <div class="card-title">En dólares</div>
+          <div class="kpi-value num">$58.52</div>
+          <div class="kpi-sub">Binance, Zinli, efectivo</div>
+        </div>
+      </div>
+
+      <div class="acct-tabs">
+        <button class="acct-tab active">Todas</button>
+        <button class="acct-tab">Bolívares</button>
+        <button class="acct-tab">Dólares</button>
+      </div>
+
+      <div class="acct-card">
+        <div class="acct-logo" style="background:#E6EEF9;">🏦</div>
+        <div><div class="acct-name">Mercantil</div><div class="acct-type">Cuenta corriente · Bs</div></div>
+        <div class="acct-amt"><div class="num">Bs 12,480</div><div class="conv">≈ $16.30</div></div>
+      </div>
+      <div class="acct-card">
+        <div class="acct-logo" style="background:#FBF0DA;">🟡</div>
+        <div><div class="acct-name">Binance</div><div class="acct-type">Wallet cripto · USD</div></div>
+        <div class="acct-amt"><div class="num">$37.00</div><div class="conv">Disponible</div></div>
+      </div>
+      <div class="acct-card">
+        <div class="acct-logo" style="background:#EFEBFB;">🟣</div>
+        <div><div class="acct-name">Zinli</div><div class="acct-type">Cuenta digital · USD</div></div>
+        <div class="acct-amt"><div class="num">$18.00</div><div class="conv">Disponible</div></div>
+      </div>
+      <div class="acct-card">
+        <div class="acct-logo" style="background:#FDEAEA;">💵</div>
+        <div><div class="acct-name">Efectivo</div><div class="acct-type">Bs y USD físico</div></div>
+        <div class="acct-amt"><div class="num">$3.52</div><div class="conv">Bs 0 + $3.52</div></div>
+      </div>
+
+      <button class="add-cat-btn" style="margin-top:14px;">+ Añadir cuenta</button>
+    </section>
+
+    <!-- ===================== DEUDAS ===================== -->
+    <section class="view" id="view-deudas">
+      <div class="topbar">
+        <div>
+          <h1>Deudas y préstamos</h1>
+          <p>Cuánto debes, a quién, y cuánto te está costando en intereses</p>
+        </div>
+      </div>
+
+      <div class="grid grid-3" style="margin-bottom:18px;">
+        <div class="card">
+          <div class="card-title">Deuda total activa</div>
+          <div class="kpi-value num" style="color:var(--danger)">$690.00</div>
+          <div class="kpi-sub">3 compromisos abiertos</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Intereses este mes</div>
+          <div class="kpi-value num">$14.60</div>
+          <div class="kpi-sub">2.1% del total adeudado</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Capacidad de endeudamiento</div>
+          <div class="kpi-value num" style="color:var(--success)">$95.00</div>
+          <div class="kpi-sub">Margen mensual disponible antes de comprometer tu cobertura</div>
+        </div>
+      </div>
+
+      <div class="debt-card">
+        <div class="debt-top">
+          <div><div class="debt-name">Tarjeta de crédito Mercantil</div><div class="debt-lender">Banco Mercantil · Tarjeta</div></div>
+          <span class="pill danger">82% del límite</span>
+        </div>
+        <div class="debt-stats">
+          <div><div class="debt-stat-label">Límite</div><div class="debt-stat-val num">$500.00</div></div>
+          <div><div class="debt-stat-label">Usado</div><div class="debt-stat-val num">$410.00</div></div>
+          <div><div class="debt-stat-label">Tasa de interés</div><div class="debt-stat-val num">3.2% mens.</div></div>
+          <div><div class="debt-stat-label">Próximo pago</div><div class="debt-stat-val num">28 ago</div></div>
+        </div>
+        <div class="progress-track"><div class="progress-fill" style="width:82%;background:var(--danger);"></div></div>
+      </div>
+
+      <div class="debt-card">
+        <div class="debt-top">
+          <div><div class="debt-name">Préstamo Zinli</div><div class="debt-lender">Zinli · Préstamo personal</div></div>
+          <span class="pill neutral">40% pagado</span>
+        </div>
+        <div class="debt-stats">
+          <div><div class="debt-stat-label">Monto original</div><div class="debt-stat-val num">$150.00</div></div>
+          <div><div class="debt-stat-label">Saldo restante</div><div class="debt-stat-val num">$90.00</div></div>
+          <div><div class="debt-stat-label">Tasa de interés</div><div class="debt-stat-val num">1.8% mens.</div></div>
+          <div><div class="debt-stat-label">Próxima cuota</div><div class="debt-stat-val num">30 ago · $60</div></div>
+        </div>
+        <div class="progress-track"><div class="progress-fill" style="width:40%;"></div></div>
+      </div>
+
+      <div class="debt-card">
+        <div class="debt-top">
+          <div><div class="debt-name">Préstamo entre socios — Squemax</div><div class="debt-lender">Personal · Sin interés</div></div>
+          <span class="pill success">Al día</span>
+        </div>
+        <div class="debt-stats">
+          <div><div class="debt-stat-label">Monto original</div><div class="debt-stat-val num">$200.00</div></div>
+          <div><div class="debt-stat-label">Saldo restante</div><div class="debt-stat-val num">$190.00</div></div>
+          <div><div class="debt-stat-label">Tasa de interés</div><div class="debt-stat-val num">0%</div></div>
+          <div><div class="debt-stat-label">Próxima cuota</div><div class="debt-stat-val num">Sin fecha fija</div></div>
+        </div>
+        <div class="progress-track"><div class="progress-fill" style="width:5%;background:var(--success);"></div></div>
+      </div>
+
+      <button class="add-cat-btn">+ Registrar deuda o préstamo</button>
+    </section>
+
+    <!-- ===================== CATEGORIAS ===================== -->
+    <section class="view" id="view-categorias">
+      <div class="topbar">
+        <div>
+          <h1>Categorías</h1>
+          <p>La misma estructura que ya usas, lista para registrar cada movimiento en segundos</p>
+        </div>
+      </div>
+
+      <div class="catg-toggle">
+        <button class="active gastos" data-catg="gastos">↓ Gastos</button>
+        <button data-catg="ingresos">↑ Ingresos</button>
+      </div>
+
+      <div id="catg-gastos">
+        <div class="catg-group">
+          <div class="catg-group-head"><div class="catg-group-icon" style="background:#E6EEF9;">🏠</div><div class="catg-group-name">Casa</div></div>
+          <div class="chip-row">
+            <span class="chip" style="background:#E6EEF9;">🏢 Alquiler</span>
+            <span class="chip" style="background:#E6EEF9;">🏬 Condominio</span>
+            <span class="chip" style="background:#E6EEF9;">📶 Internet y teléfono</span>
+            <span class="chip" style="background:#E6EEF9;">🔧 Mantenimiento</span>
+            <span class="chip" style="background:#E6EEF9;">⚡ Servicios básicos</span>
+            <span class="chip" style="background:#E6EEF9;">📺 TV</span>
+            <span class="chip" style="background:#E6EEF9;">🧹 Limpieza</span>
+          </div>
+        </div>
+        <div class="catg-group">
+          <div class="catg-group-head"><div class="catg-group-icon" style="background:#FBEFE3;">🍽️</div><div class="catg-group-name">Alimentación</div></div>
+          <div class="chip-row">
+            <span class="chip" style="background:#FBEFE3;">🛒 Mercado</span>
+            <span class="chip" style="background:#FBEFE3;">🛵 Delivery</span>
+            <span class="chip" style="background:#FBEFE3;">🍴 Comer fuera</span>
+            <span class="chip" style="background:#FBEFE3;">☕ Café y bebidas</span>
+            <span class="chip" style="background:#FBEFE3;">🍪 Snacks</span>
+          </div>
+        </div>
+        <div class="catg-group">
+          <div class="catg-group-head"><div class="catg-group-icon" style="background:#EFEBF7;">🚗</div><div class="catg-group-name">Transporte</div></div>
+          <div class="chip-row">
+            <span class="chip" style="background:#EFEBF7;">⛽ Gasolina</span>
+            <span class="chip" style="background:#EFEBF7;">🅿️ Estacionamiento</span>
+            <span class="chip" style="background:#EFEBF7;">🚌 Transporte público</span>
+            <span class="chip" style="background:#EFEBF7;">🚙 Mantenimiento vehículo</span>
+            <span class="chip" style="background:#EFEBF7;">🚕 Taxis</span>
+            <span class="chip" style="background:#EFEBF7;">🛡️ Seguro vehicular</span>
+          </div>
+        </div>
+        <div class="catg-group">
+          <div class="catg-group-head"><div class="catg-group-icon" style="background:#FCE9E9;">❤️</div><div class="catg-group-name">Salud</div></div>
+          <div class="chip-row">
+            <span class="chip" style="background:#FCE9E9;">🛡️ Seguro médico</span>
+            <span class="chip" style="background:#FCE9E9;">⚕️ Consultas</span>
+            <span class="chip" style="background:#FCE9E9;">💊 Farmacia</span>
+            <span class="chip" style="background:#FCE9E9;">🩹 Tratamientos</span>
+          </div>
+        </div>
+        <div class="catg-group">
+          <div class="catg-group-head"><div class="catg-group-icon" style="background:#E4F3E9;">🌿</div><div class="catg-group-name">Bienestar</div></div>
+          <div class="chip-row">
+            <span class="chip" style="background:#E4F3E9;">🤸 Actividad física</span>
+            <span class="chip" style="background:#E4F3E9;">💆 Belleza</span>
+            <span class="chip" style="background:#E4F3E9;">⚽ Artículos deportivos</span>
+            <span class="chip" style="background:#E4F3E9;">🧴 Aseo personal</span>
+            <span class="chip" style="background:#E4F3E9;">✂️ Peluquería</span>
+          </div>
+        </div>
+        <div class="catg-group">
+          <div class="catg-group-head"><div class="catg-group-icon" style="background:#FBEAF2;">👔</div><div class="catg-group-name">Vestimenta</div></div>
+          <div class="chip-row">
+            <span class="chip" style="background:#FBEAF2;">👕 Ropa</span>
+            <span class="chip" style="background:#FBEAF2;">👟 Zapatos</span>
+            <span class="chip" style="background:#FBEAF2;">👜 Bolsos</span>
+            <span class="chip" style="background:#FBEAF2;">⌚ Accesorios</span>
+            <span class="chip" style="background:#FBEAF2;">🧺 Lavandería</span>
+          </div>
+        </div>
+        <div class="catg-group">
+          <div class="catg-group-head"><div class="catg-group-icon" style="background:#FBF3D9;">🎭</div><div class="catg-group-name">Entretenimiento</div></div>
+          <div class="chip-row">
+            <span class="chip" style="background:#FBF3D9;">📦 Suscripciones</span>
+            <span class="chip" style="background:#FBF3D9;">🎉 Eventos y salidas</span>
+            <span class="chip" style="background:#FBF3D9;">🎨 Hobbies</span>
+            <span class="chip" style="background:#FBF3D9;">🎮 Videojuegos</span>
+            <span class="chip" style="background:#FBF3D9;">🌲 Recreación</span>
+            <span class="chip" style="background:#FBF3D9;">🍷 Alcohol/tabaco</span>
+          </div>
+        </div>
+        <div class="catg-group">
+          <div class="catg-group-head"><div class="catg-group-icon" style="background:#E1F1F5;">✈️</div><div class="catg-group-name">Viajes</div></div>
+          <div class="chip-row">
+            <span class="chip" style="background:#E1F1F5;">🚐 Transporte viaje</span>
+            <span class="chip" style="background:#E1F1F5;">🛏️ Alojamiento</span>
+            <span class="chip" style="background:#E1F1F5;">🛡️ Seguro de viaje</span>
+            <span class="chip" style="background:#E1F1F5;">📋 Trámites de viaje</span>
+          </div>
+        </div>
+        <div class="catg-group">
+          <div class="catg-group-head"><div class="catg-group-icon" style="background:#FCE9E9;">💳</div><div class="catg-group-name">Pago de deuda</div></div>
+          <div class="chip-row"><span class="chip" style="background:#FCE9E9;">💳 Cuotas y abonos</span></div>
+        </div>
+        <div class="catg-group">
+          <div class="catg-group-head"><div class="catg-group-icon" style="background:#FBF0DA;">🏦</div><div class="catg-group-name">Préstamo otorgado</div></div>
+          <div class="chip-row"><span class="chip" style="background:#FBF0DA;">🤝 Dinero prestado a terceros</span></div>
+        </div>
+      </div>
+
+      <div id="catg-ingresos" style="display:none;">
+        <div class="catg-group">
+          <div class="chip-row" style="gap:12px;">
+            <div class="acct-card" style="flex:1;min-width:220px;"><div class="acct-logo" style="background:#E4F3E9;">💼</div><div><div class="acct-name">Salario</div></div></div>
+            <div class="acct-card" style="flex:1;min-width:220px;"><div class="acct-logo" style="background:#E6EEF9;">💻</div><div><div class="acct-name">Freelance</div></div></div>
+            <div class="acct-card" style="flex:1;min-width:220px;"><div class="acct-logo" style="background:#EFEBF7;">📈</div><div><div class="acct-name">Inversiones</div></div></div>
+            <div class="acct-card" style="flex:1;min-width:220px;"><div class="acct-logo" style="background:#FBEFE3;">🏢</div><div><div class="acct-name">Alquileres</div></div></div>
+            <div class="acct-card" style="flex:1;min-width:220px;"><div class="acct-logo" style="background:#FBEAF2;">🏪</div><div><div class="acct-name">Ventas</div></div></div>
+            <div class="acct-card" style="flex:1;min-width:220px;"><div class="acct-logo" style="background:#EEF1EC;">👛</div><div><div class="acct-name">Otros ingresos</div></div></div>
+            <div class="acct-card" style="flex:1;min-width:220px;"><div class="acct-logo" style="background:#E4F3E9;">🐷</div><div><div class="acct-name">Cobro de deuda</div></div></div>
+            <div class="acct-card" style="flex:1;min-width:220px;"><div class="acct-logo" style="background:#E6EEF9;">📈</div><div><div class="acct-name">Préstamo recibido</div></div></div>
+          </div>
+        </div>
+      </div>
+
+      <button class="add-cat-btn">+ Nueva categoría</button>
+    </section>
+
+    <footer class="note">Prototipo visual — Rumbo · datos de ejemplo para validar flujos antes de construir la versión funcional en web y Flutter</footer>
+  </main>
+</div>
+
+<script>
+// ---- Navigation ----
+document.querySelectorAll('.nav-item').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    document.getElementById('view-'+btn.dataset.view).classList.add('active');
+  });
+});
+
+// ---- Currency toggle (visual only in prototype) ----
+document.querySelectorAll('.ct-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.ct-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
+
+// ---- Categorías toggle ----
+document.querySelectorAll('.catg-toggle button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.catg-toggle button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    if(btn.dataset.catg==='gastos'){
+      document.getElementById('catg-gastos').style.display='block';
+      document.getElementById('catg-ingresos').style.display='none';
+    }else{
+      document.getElementById('catg-gastos').style.display='none';
+      document.getElementById('catg-ingresos').style.display='block';
+    }
+  });
+});
+
+// ---- Calendar build ----
+const calGrid = document.getElementById('calGrid');
+const dows = ['D','L','M','M','J','V','S'];
+dows.forEach(d=>{ const el=document.createElement('div'); el.className='cal-dow'; el.textContent=d; calGrid.appendChild(el); });
+const firstDow = 6; // Aug 1 2026 is a Saturday
+const daysInMonth = 31;
+const today = 13;
+const tags = {5:['Alquiler','pago'],8:['Internet','pago'],13:['Hoy',null],16:['Condominio','pago'],28:['Tarjeta','pago'],30:['Préstamo','pago'],1:['Salario','ingreso']};
+for(let i=0;i<firstDow;i++){ const e=document.createElement('div'); e.className='cal-day empty'; calGrid.appendChild(e); }
+for(let d=1; d<=daysInMonth; d++){
+  const cell=document.createElement('div');
+  cell.className='cal-day'+(d===today?' today':'');
+  const num=document.createElement('div'); num.className='d-num'; num.textContent=d;
+  cell.appendChild(num);
+  if(tags[d] && tags[d][1]){
+    const tag=document.createElement('span'); tag.className='cal-tag '+tags[d][1]; tag.textContent=tags[d][0];
+    cell.appendChild(tag);
+  }
+  calGrid.appendChild(cell);
+}
+
+// ---- Charts ----
+Chart.defaults.font.family = "'Inter',sans-serif";
+new Chart(document.getElementById('chartCategorias'), {
+  type:'doughnut',
+  data:{
+    labels:['Casa','Alimentación','Transporte','Pago de deuda','Entretenimiento','Otros'],
+    datasets:[{
+      data:[160,118,74.2,58,37.1,40],
+      backgroundColor:['#3F7A50','#C9962C','#7C6BC4','#C1483D','#D9A83B','#8FA79E'],
+      borderWidth:0
+    }]
+  },
+  options:{
+    cutout:'68%',
+    plugins:{ legend:{ position:'bottom', labels:{ boxWidth:10, font:{size:11} } } }
+  }
+});
+
+new Chart(document.getElementById('chartTendencia'), {
+  type:'bar',
+  data:{
+    labels:['Mar','Abr','May','Jun','Jul','Ago'],
+    datasets:[
+      { label:'Ingresos', data:[560,600,580,610,635,640], backgroundColor:'#3F7A50', borderRadius:5 },
+      { label:'Gastos', data:[510,540,470,530,505,487], backgroundColor:'#C1483D', borderRadius:5 }
+    ]
+  },
+  options:{
+    scales:{ y:{ grid:{ color:'#EEF1EC' }, ticks:{ callback:v=>'$'+v } }, x:{ grid:{ display:false } } },
+    plugins:{ legend:{ position:'bottom', labels:{ boxWidth:10, font:{size:11} } } }
+  }
+});
+</script>
+</body>
+</html>
