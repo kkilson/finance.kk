@@ -22,6 +22,7 @@ export default async function DeudasPage() {
   const [deudas, capacidad, cuentas, categorias] = await Promise.all([
     prisma.deudaPrestamo.findMany({
       where: { usuarioId, activa: true },
+      include: { pagos: { orderBy: { fecha: "desc" } } },
       orderBy: { createdAt: "desc" },
     }),
     calcularCapacidadEndeudamiento(usuarioId),

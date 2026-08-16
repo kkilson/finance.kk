@@ -92,6 +92,15 @@ export interface DeudaDTO {
   frecuenciaCuota: FrecuenciaCuota;
   producto: string | null;
   comercioAfiliado: string | null;
+  pagos?: PagoDeudaDTO[];
+}
+
+export interface PagoDeudaDTO {
+  id: string;
+  monto: number;
+  fecha: string;
+  interesIncluido: number | null;
+  penalidadIncluida: number | null;
 }
 
 export interface CapacidadDTO {

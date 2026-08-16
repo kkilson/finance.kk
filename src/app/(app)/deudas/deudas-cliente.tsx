@@ -174,6 +174,9 @@ export function DeudasCliente({
             categorias={categorias}
             onPagar={(datos) => accion(() => api.post(`/api/deudas/${d.id}/pagos`, datos))}
             onEditar={(datos) => accion(() => api.patch(`/api/deudas/${d.id}`, datos))}
+            onEliminarPago={(pagoId) =>
+              accion(() => api.del(`/api/deudas/${d.id}/pagos/${pagoId}`))
+            }
             onCerrar={() => accion(() => api.del(`/api/deudas/${d.id}`))}
           />
         ))

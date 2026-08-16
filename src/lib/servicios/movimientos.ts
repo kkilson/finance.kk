@@ -136,7 +136,8 @@ export async function eliminarMovimiento(usuarioId: string, movimientoId: string
   if (!mov) throw new NoEncontradoError("Movimiento");
   if (mov.pagosDeuda.length > 0) {
     throw new ReglaNegocioError(
-      "Este movimiento es el pago de una deuda; elimínalo desde el módulo de deudas",
+      "Este movimiento es el pago de una deuda. Deshazlo en Deudas → la deuda → Pagos → " +
+        "Deshacer, así también vuelven a su sitio el saldo de la deuda y la cuota del presupuesto",
     );
   }
 

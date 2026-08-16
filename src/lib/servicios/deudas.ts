@@ -2,7 +2,7 @@ import { addDays, addMonths } from "date-fns";
 import type { FrecuenciaCuota, Moneda } from "@/generated/prisma/enums";
 import { prisma } from "@/lib/prisma";
 import { NoEncontradoError, ReglaNegocioError } from "@/lib/api";
-import { aNumero, redondear } from "@/lib/moneda";
+import { aNumero, convertir, redondear } from "@/lib/moneda";
 import { mesPeriodoDe } from "@/lib/periodo";
 import { crearMovimiento } from "@/lib/servicios/movimientos";
 
@@ -215,6 +215,59 @@ export async function crearDeuda(usuarioId: string, input: DeudaInput) {
       saldoRestante: input.saldoRestante ?? input.montoOriginal,
     },
   });
+}
+
+/**
+ * Deshace un pago de deuda. Toca cuatro cosas a la vez, y por eso no se puede
+ * borrar el movimiento suelto desde Movimientos: hay que devolver el saldo a la
+ * cuenta, subir de nuevo el saldo de la deuda, reabrirla si se había cerrado
+ * con ese pago, y devolver el compromiso a pendiente si venía del presupuesto.
+ */
+export async function eliminarPagoDeuda(usuarioId: string, deudaId: string, pagoId: string) {
+  const pago = await prisma.pagoDeuda.findFirst({
+    where: { id: pagoId, deudaId, deuda: { usuarioId } },
+    include: {
+      deuda: true,
+      movimiento: { include: { cuenta: true } },
+    },
+  });
+  if (!pago) throw new NoEncontradoError("Pago");
+
+  const mov = pago.movimiento;
+  const tasa = mov.tasaCambioAplicada ? aNumero(mov.tasaCambioAplicada) : null;
+  // Se devuelve a la cuenta lo mismo que se le restó, en la moneda de la cuenta.
+  const enMonedaCuenta = redondear(
+    convertir(aNumero(mov.monto), mov.moneda, mov.cuenta.moneda, tasa),
+  );
+
+  // Intereses y penalidad no habían bajado capital, así que tampoco vuelven.
+  const aCapital = redondear(
+    aNumero(pago.monto) - aNumero(pago.interesIncluido) - aNumero(pago.penalidadIncluida),
+  );
+  const saldoRestaurado = redondear(aNumero(pago.deuda.saldoRestante) + aCapital);
+
+  await prisma.$transaction(async (tx) => {
+    await tx.pagoDeuda.delete({ where: { id: pago.id } });
+
+    if (mov.compromisoId) {
+      await tx.compromisoPresupuesto.update({
+        where: { id: mov.compromisoId },
+        data: { estado: "PENDIENTE" },
+      });
+    }
+
+    await tx.movimiento.delete({ where: { id: mov.id } });
+    await tx.cuenta.update({
+      where: { id: mov.cuentaId },
+      data: { saldoActual: { increment: enMonedaCuenta } },
+    });
+    await tx.deudaPrestamo.update({
+      where: { id: pago.deudaId },
+      data: { saldoRestante: saldoRestaurado, activa: true },
+    });
+  });
+
+  return { eliminado: true, saldoRestante: saldoRestaurado };
 }
 
 /** Pago suelto de una deuda (fuera del presupuesto): movimiento + PagoDeuda + saldo. */

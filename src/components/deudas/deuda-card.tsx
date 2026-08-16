@@ -19,6 +19,7 @@ export function DeudaCard({
   categorias,
   onPagar,
   onEditar,
+  onEliminarPago,
   onCerrar,
 }: {
   deuda: DeudaDTO;
@@ -26,10 +27,13 @@ export function DeudaCard({
   categorias: CategoriaDTO[];
   onPagar: (datos: Record<string, unknown>) => Promise<void>;
   onEditar: (datos: Record<string, unknown>) => Promise<void>;
+  onEliminarPago: (pagoId: string) => Promise<void>;
   onCerrar: () => void;
 }) {
+  const pagos = d.pagos ?? [];
   const [pagando, setPagando] = useState(false);
   const [editando, setEditando] = useState(false);
+  const [verPagos, setVerPagos] = useState(false);
   const [monto, setMonto] = useState("");
   const [cuentaId, setCuentaId] = useState(cuentas[0]?.id ?? "");
   const [categoriaId, setCategoriaId] = useState(
@@ -122,10 +126,45 @@ export function DeudaCard({
         >
           {editando ? "Cancelar" : "Editar"}
         </Boton>
+        {pagos.length ? (
+          <Boton variante="secundario" onClick={() => setVerPagos((v) => !v)}>
+            {verPagos ? "Ocultar pagos" : `Pagos (${pagos.length})`}
+          </Boton>
+        ) : null}
         <Boton variante="fantasma" onClick={onCerrar}>
           Cerrar deuda
         </Boton>
       </div>
+
+      {verPagos ? (
+        <div className="mt-3 border-t border-line pt-3">
+          <p className="mb-2 text-[11.5px] text-ink-soft">
+            Deshacer un pago devuelve el dinero a la cuenta, sube el saldo de la deuda y, si venía
+            del presupuesto, marca esa cuota como pendiente otra vez.
+          </p>
+          <ul className="flex flex-col">
+            {pagos.map((p) => (
+              <li
+                key={p.id}
+                className="flex items-center justify-between gap-3 border-b border-line py-2 last:border-none"
+              >
+                <span className="text-[12.5px] text-ink-soft">
+                  {new Date(p.fecha).toLocaleDateString("es-VE")}
+                </span>
+                <span className="num flex-1 text-right text-[13px] font-medium">
+                  {formato(p.monto, d.moneda)}
+                </span>
+                <button
+                  onClick={() => onEliminarPago(p.id)}
+                  className="shrink-0 rounded-full px-2.5 py-1 text-[11.5px] text-ink-soft transition hover:bg-danger-soft hover:text-danger"
+                >
+                  Deshacer
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
 
       {editando ? (
         <FormEditarDeuda
