@@ -17,10 +17,28 @@ export function fechaDeCuota(inicio: Date, numero: number, frecuencia: Frecuenci
   return frecuencia === "QUINCENAL" ? addDays(inicio, 14 * numero) : addMonths(inicio, numero);
 }
 
+export interface PlanCuotas {
+  /** Lo que se pagó al comprar (0% es un caso normal en Cashea). */
+  inicial: number;
+  /** Monto que queda repartido en cuotas. */
+  financiado: number;
+  cuotas: Cuota[];
+  /** Las que el usuario declara ya pagadas al registrar la deuda. */
+  pagadas: Cuota[];
+  /** Las que faltan: son las que entran al presupuesto. */
+  pendientes: Cuota[];
+  /** Lo que realmente se debe hoy. */
+  saldoRestante: number;
+}
+
 /**
- * Plan de cuotas de una compra BNPL. La inicial se paga en el momento, así que
- * lo que queda financiado es el monto menos esa inicial.
- * El redondeo sobrante se ajusta en la última cuota para que la suma cuadre.
+ * Plan de cuotas de una compra a cuotas. La inicial se paga en el momento, así
+ * que lo financiado es el monto menos esa inicial. El sobrante del redondeo se
+ * ajusta en la última cuota para que la suma cuadre exactamente.
+ *
+ * `cuotasPagadas` existe porque casi nunca registras la deuda el día que
+ * compras: lo normal es cargarla cuando ya llevas una o dos cuotas encima, y
+ * entonces ni el saldo es el total ni esas cuotas deben aparecer por pagar.
  */
 export function generarCuotasBnpl(params: {
   montoOriginal: number;
@@ -28,7 +46,8 @@ export function generarCuotasBnpl(params: {
   numeroCuotas: number;
   frecuenciaCuota: FrecuenciaCuota;
   fechaCompra: Date;
-}): { inicial: number; financiado: number; cuotas: Cuota[] } {
+  cuotasPagadas?: number;
+}): PlanCuotas {
   const inicial = redondear((params.montoOriginal * (params.pctInicial ?? 0)) / 100);
   const financiado = redondear(params.montoOriginal - inicial);
   const base = redondear(financiado / params.numeroCuotas);
@@ -42,7 +61,19 @@ export function generarCuotasBnpl(params: {
       monto: esUltima ? redondear(financiado - base * (params.numeroCuotas - 1)) : base,
     });
   }
-  return { inicial, financiado, cuotas };
+
+  const yaPagadas = Math.min(Math.max(params.cuotasPagadas ?? 0, 0), params.numeroCuotas);
+  const pagadas = cuotas.slice(0, yaPagadas);
+  const pendientes = cuotas.slice(yaPagadas);
+
+  return {
+    inicial,
+    financiado,
+    cuotas,
+    pagadas,
+    pendientes,
+    saldoRestante: redondear(pendientes.reduce((a, c) => a + c.monto, 0)),
+  };
 }
 
 type DeudaInput = {
@@ -57,7 +88,13 @@ type DeudaInput = {
   diaCierre?: number | null;
 } & (
   | { tipo: "TARJETA"; limite: number }
-  | { tipo: "PRESTAMO_CUOTAS"; numeroCuotas: number; frecuenciaCuota: FrecuenciaCuota }
+  | {
+      tipo: "PRESTAMO_CUOTAS";
+      numeroCuotas: number;
+      frecuenciaCuota: FrecuenciaCuota;
+      fechaCompra?: Date;
+      cuotasPagadas?: number;
+    }
   | { tipo: "PRESTAMO_INFORMAL" }
   | {
       tipo: "BNPL";
@@ -70,6 +107,7 @@ type DeudaInput = {
       comercioAfiliado?: string | null;
       producto?: string | null;
       fechaCompra?: Date;
+      cuotasPagadas?: number;
       generarCuotas: boolean;
     }
 );
@@ -95,6 +133,7 @@ export async function crearDeuda(usuarioId: string, input: DeudaInput) {
       numeroCuotas: input.numeroCuotas,
       frecuenciaCuota: input.frecuenciaCuota,
       fechaCompra,
+      cuotasPagadas: input.cuotasPagadas,
     });
 
     return prisma.$transaction(async (tx) => {
@@ -102,8 +141,8 @@ export async function crearDeuda(usuarioId: string, input: DeudaInput) {
         data: {
           ...comun,
           tipo: "BNPL",
-          // Lo que realmente se debe es lo financiado; la inicial ya se pagó.
-          saldoRestante: input.saldoRestante ?? plan.financiado,
+          // Lo que se debe hoy: lo financiado menos las cuotas ya pagadas.
+          saldoRestante: input.saldoRestante ?? plan.saldoRestante,
           plataformaBnpl: input.plataformaBnpl,
           numeroCuotas: input.numeroCuotas,
           frecuenciaCuota: input.frecuenciaCuota,
@@ -112,15 +151,14 @@ export async function crearDeuda(usuarioId: string, input: DeudaInput) {
           penalidadPorAtraso: input.penalidadPorAtraso ?? null,
           comercioAfiliado: input.comercioAfiliado ?? null,
           producto: input.producto ?? null,
-          fechaProximoPago: input.fechaProximoPago ?? plan.cuotas[0]?.fecha ?? null,
+          fechaProximoPago: input.fechaProximoPago ?? plan.pendientes[0]?.fecha ?? null,
         },
       });
 
       if (input.generarCuotas) {
-        // Cada cuota futura entra al presupuesto sola, sin que el usuario
-        // tenga que crear 6 compromisos a mano (sección 5).
+        // Solo las que faltan: las ya pagadas no deben aparecer por pagar.
         await tx.compromisoPresupuesto.createMany({
-          data: plan.cuotas.map((c) => ({
+          data: plan.pendientes.map((c) => ({
             usuarioId,
             tipo: "PAGO" as const,
             concepto: `${input.plataformaBnpl} — ${input.nombre} (cuota ${c.numero}/${input.numeroCuotas})`,
@@ -150,13 +188,22 @@ export async function crearDeuda(usuarioId: string, input: DeudaInput) {
   }
 
   if (input.tipo === "PRESTAMO_CUOTAS") {
+    const plan = generarCuotasBnpl({
+      montoOriginal: input.montoOriginal,
+      pctInicial: null,
+      numeroCuotas: input.numeroCuotas,
+      frecuenciaCuota: input.frecuenciaCuota,
+      fechaCompra: input.fechaCompra ?? new Date(),
+      cuotasPagadas: input.cuotasPagadas,
+    });
     return prisma.deudaPrestamo.create({
       data: {
         ...comun,
         tipo: "PRESTAMO_CUOTAS",
         numeroCuotas: input.numeroCuotas,
         frecuenciaCuota: input.frecuenciaCuota,
-        saldoRestante: input.saldoRestante ?? input.montoOriginal,
+        saldoRestante: input.saldoRestante ?? plan.saldoRestante,
+        fechaProximoPago: input.fechaProximoPago ?? plan.pendientes[0]?.fecha ?? null,
       },
     });
   }

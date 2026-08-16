@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { conUsuario, json, leerBody } from "@/lib/api";
-import { deudaCrearSchema } from "@/lib/schemas";
+import { deudaCrearSchemaValidado } from "@/lib/schemas";
 import { crearDeuda } from "@/lib/servicios/deudas";
 
 export const GET = conUsuario(async (usuarioId, req: Request) => {
@@ -14,6 +14,6 @@ export const GET = conUsuario(async (usuarioId, req: Request) => {
 });
 
 export const POST = conUsuario(async (usuarioId, req: Request) => {
-  const datos = await leerBody(req, deudaCrearSchema);
+  const datos = await leerBody(req, deudaCrearSchemaValidado);
   return json(await crearDeuda(usuarioId, datos), 201);
 });

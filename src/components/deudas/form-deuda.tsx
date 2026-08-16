@@ -27,6 +27,7 @@ export function FormDeuda({
   const [saldoRestante, setSaldoRestante] = useState("");
   const [pagoMinimo, setPagoMinimo] = useState("");
   const [numeroCuotas, setNumeroCuotas] = useState("3");
+  const [cuotasPagadas, setCuotasPagadas] = useState("0");
   const [frecuencia, setFrecuencia] = useState<FrecuenciaCuota>("QUINCENAL");
   const [plataforma, setPlataforma] = useState("Cashea");
   const [nivel, setNivel] = useState("");
@@ -56,7 +57,13 @@ export function FormDeuda({
       tipo === "TARJETA"
         ? { tipo, limite: Number(limite) }
         : tipo === "PRESTAMO_CUOTAS"
-          ? { tipo, numeroCuotas: Number(numeroCuotas), frecuenciaCuota: frecuencia }
+          ? {
+            tipo,
+            numeroCuotas: Number(numeroCuotas),
+            frecuenciaCuota: frecuencia,
+            cuotasPagadas: Number(cuotasPagadas) || 0,
+            fechaCompra: new Date(`${fechaCompra}T12:00:00`).toISOString(),
+          }
           : tipo === "BNPL"
             ? {
                 tipo,
@@ -69,6 +76,7 @@ export function FormDeuda({
                 comercioAfiliado: comercio || null,
                 producto: producto || null,
                 fechaCompra: new Date(`${fechaCompra}T12:00:00`).toISOString(),
+                cuotasPagadas: Number(cuotasPagadas) || 0,
                 generarCuotas: true,
               }
             : { tipo };
@@ -197,6 +205,29 @@ export function FormDeuda({
                 <option value="MENSUAL">Mensual</option>
               </Select>
             </Campo>
+            <Campo
+              etiqueta={tipo === "BNPL" ? "Fecha de compra" : "Fecha de inicio"}
+              hint="Desde aquí se cuentan las fechas de todas las cuotas"
+            >
+              <Input
+                type="date"
+                value={fechaCompra}
+                onChange={(e) => setFechaCompra(e.target.value)}
+                required
+              />
+            </Campo>
+            <Campo
+              etiqueta="Cuotas ya pagadas"
+              hint="Si registras la deuda a medio camino, no entran al presupuesto ni al saldo"
+            >
+              <Input
+                type="number"
+                min="0"
+                step="1"
+                value={cuotasPagadas}
+                onChange={(e) => setCuotasPagadas(e.target.value)}
+              />
+            </Campo>
           </>
         ) : null}
 
@@ -225,13 +256,6 @@ export function FormDeuda({
                 placeholder="40"
               />
             </Campo>
-            <Campo etiqueta="Fecha de compra" hint="Desde aquí se calculan las cuotas">
-              <Input
-                type="date"
-                value={fechaCompra}
-                onChange={(e) => setFechaCompra(e.target.value)}
-              />
-            </Campo>
             <Campo etiqueta="Penalidad por atraso">
               <Input
                 type="number"
@@ -248,8 +272,9 @@ export function FormDeuda({
               <Input value={producto} onChange={(e) => setProducto(e.target.value)} />
             </Campo>
             <p className="self-end pb-2 text-[11.5px] text-ink-soft md:col-span-2">
-              Al guardar se crean solas las {numeroCuotas || "N"} cuotas en tu presupuesto, desde la
-              fecha de compra.
+              Al guardar entran al presupuesto las{" "}
+              {Math.max(Number(numeroCuotas || 0) - Number(cuotasPagadas || 0), 0)} cuotas que
+              faltan, contadas desde la fecha de compra.
             </p>
           </>
         ) : null}

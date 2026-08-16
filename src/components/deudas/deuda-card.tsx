@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Boton, Campo, Input, Pill, Select } from "@/components/ui";
+import { FormEditarDeuda } from "@/components/deudas/form-editar-deuda";
 import { diaCorto, formato } from "@/lib/formato";
 import type { CategoriaDTO, CuentaDTO, DeudaDTO } from "@/types";
 
@@ -17,15 +18,18 @@ export function DeudaCard({
   cuentas,
   categorias,
   onPagar,
+  onEditar,
   onCerrar,
 }: {
   deuda: DeudaDTO;
   cuentas: CuentaDTO[];
   categorias: CategoriaDTO[];
   onPagar: (datos: Record<string, unknown>) => Promise<void>;
+  onEditar: (datos: Record<string, unknown>) => Promise<void>;
   onCerrar: () => void;
 }) {
   const [pagando, setPagando] = useState(false);
+  const [editando, setEditando] = useState(false);
   const [monto, setMonto] = useState("");
   const [cuentaId, setCuentaId] = useState(cuentas[0]?.id ?? "");
   const [categoriaId, setCategoriaId] = useState(
@@ -100,13 +104,39 @@ export function DeudaCard({
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2">
-        <Boton variante="secundario" onClick={() => setPagando((v) => !v)}>
+        <Boton
+          variante="secundario"
+          onClick={() => {
+            setPagando((v) => !v);
+            setEditando(false);
+          }}
+        >
           {pagando ? "Cancelar" : "Registrar pago"}
+        </Boton>
+        <Boton
+          variante="secundario"
+          onClick={() => {
+            setEditando((v) => !v);
+            setPagando(false);
+          }}
+        >
+          {editando ? "Cancelar" : "Editar"}
         </Boton>
         <Boton variante="fantasma" onClick={onCerrar}>
           Cerrar deuda
         </Boton>
       </div>
+
+      {editando ? (
+        <FormEditarDeuda
+          deuda={d}
+          onCancelar={() => setEditando(false)}
+          onGuardar={async (datos) => {
+            await onEditar(datos);
+            setEditando(false);
+          }}
+        />
+      ) : null}
 
       {pagando ? (
         <form

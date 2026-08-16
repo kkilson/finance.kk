@@ -164,6 +164,8 @@ export const deudaCrearSchema = z.discriminatedUnion("tipo", [
     tipo: z.literal("PRESTAMO_CUOTAS"),
     numeroCuotas: z.number().int().positive("Indica en cuántas cuotas se paga"),
     frecuenciaCuota: frecuenciaCuotaSchema.default("MENSUAL"),
+    fechaCompra: fechaIso.optional(),
+    cuotasPagadas: z.number().int().min(0).default(0),
   }),
   z.object({
     ...deudaBase,
@@ -181,10 +183,22 @@ export const deudaCrearSchema = z.discriminatedUnion("tipo", [
     comercioAfiliado: z.string().nullish(),
     producto: z.string().nullish(),
     fechaCompra: fechaIso.optional(),
-    /** Genera los compromisos de cada cuota futura al crear la deuda. */
+    /** Cuántas cuotas ya pagaste antes de registrar la deuda acá. */
+    cuotasPagadas: z.number().int().min(0).default(0),
+    /** Genera los compromisos de las cuotas que faltan al crear la deuda. */
     generarCuotas: z.boolean().default(true),
   }),
 ]);
+
+export const deudaCrearSchemaValidado = deudaCrearSchema.superRefine((v, ctx) => {
+  if ("cuotasPagadas" in v && "numeroCuotas" in v && v.cuotasPagadas > v.numeroCuotas) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["cuotasPagadas"],
+      message: `No puedes haber pagado ${v.cuotasPagadas} de ${v.numeroCuotas} cuotas`,
+    });
+  }
+});
 
 export const deudaEditarSchema = z.object({
   nombre: z.string().trim().min(1).optional(),
