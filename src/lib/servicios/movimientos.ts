@@ -127,6 +127,155 @@ export async function crearMovimiento(usuarioId: string, input: CrearMovimientoI
   });
 }
 
+/** Cuánto mueve un movimiento el saldo de su cuenta origen, con signo. */
+function deltaEnOrigen(
+  tipo: TipoMovimiento,
+  monto: number,
+  moneda: Moneda,
+  monedaCuenta: Moneda,
+  tasa: number | null,
+): number {
+  const enMonedaCuenta = redondear(convertir(monto, moneda, monedaCuenta, tasa));
+  return tipo === "INGRESO" ? enMonedaCuenta : -enMonedaCuenta;
+}
+
+export interface EditarMovimientoInput extends Partial<CrearMovimientoInput> {
+  esExtraordinario?: boolean;
+}
+
+/**
+ * Edita un movimiento recalculando saldos: revierte el efecto anterior y aplica
+ * el nuevo dentro de una misma transacción. Es la única forma segura de dejar
+ * cambiar monto, cuenta o tipo sin que los saldos queden a la deriva.
+ */
+export async function actualizarMovimiento(
+  usuarioId: string,
+  movimientoId: string,
+  cambios: EditarMovimientoInput,
+) {
+  const previo = await prisma.movimiento.findFirst({
+    where: { id: movimientoId, usuarioId },
+    include: { cuenta: true, cuentaDestino: true, pagosDeuda: true },
+  });
+  if (!previo) throw new NoEncontradoError("Movimiento");
+
+  // Un pago de deuda arrastra saldo de la deuda y estado de la cuota; cambiarle
+  // el monto por detrás los dejaría mintiendo.
+  const tocaElDinero =
+    cambios.monto !== undefined ||
+    cambios.moneda !== undefined ||
+    cambios.tipo !== undefined ||
+    cambios.cuentaId !== undefined ||
+    cambios.cuentaDestinoId !== undefined;
+
+  if (previo.pagosDeuda.length > 0 && tocaElDinero) {
+    throw new ReglaNegocioError(
+      "Este movimiento es el pago de una deuda: para cambiar el monto o la cuenta, " +
+        "deshazlo en Deudas y regístralo de nuevo",
+    );
+  }
+
+  const tipo = cambios.tipo ?? previo.tipo;
+  const monto = cambios.monto ?? aNumero(previo.monto);
+  const moneda = cambios.moneda ?? previo.moneda;
+
+  const cuentaNueva =
+    cambios.cuentaId && cambios.cuentaId !== previo.cuentaId
+      ? await prisma.cuenta.findFirst({ where: { id: cambios.cuentaId, usuarioId } })
+      : previo.cuenta;
+  if (!cuentaNueva) throw new NoEncontradoError("Cuenta");
+
+  let destinoNuevo = previo.cuentaDestino;
+  if (tipo !== "TRANSFERENCIA") {
+    destinoNuevo = null;
+  } else if (cambios.cuentaDestinoId !== undefined) {
+    destinoNuevo = cambios.cuentaDestinoId
+      ? await prisma.cuenta.findFirst({ where: { id: cambios.cuentaDestinoId, usuarioId } })
+      : null;
+  }
+  if (tipo === "TRANSFERENCIA") {
+    if (!destinoNuevo) throw new ReglaNegocioError("Falta la cuenta destino", "cuentaDestinoId");
+    if (destinoNuevo.id === cuentaNueva.id) {
+      throw new ReglaNegocioError("La cuenta destino debe ser distinta", "cuentaDestinoId");
+    }
+  }
+
+  if (cambios.categoriaId) {
+    const cat = await prisma.categoria.findFirst({
+      where: { id: cambios.categoriaId, usuarioId },
+    });
+    if (!cat) throw new NoEncontradoError("Categoría");
+    if (tipo !== "TRANSFERENCIA") {
+      const esperado = tipo === "INGRESO" ? "INGRESO" : "GASTO";
+      if (cat.tipo !== esperado) {
+        throw new ReglaNegocioError(
+          `La categoría "${cat.nombre}" es de tipo ${cat.tipo} y el movimiento es ${tipo}`,
+          "categoriaId",
+        );
+      }
+    }
+  }
+
+  // La tasa original se conserva: es la que estaba vigente cuando ocurrió.
+  const tasa = previo.tasaCambioAplicada ? aNumero(previo.tasaCambioAplicada) : null;
+
+  const ajustes = new Map<string, number>();
+  const acumular = (cuentaId: string, delta: number) =>
+    ajustes.set(cuentaId, redondear((ajustes.get(cuentaId) ?? 0) + delta));
+
+  // Revertir lo viejo…
+  acumular(
+    previo.cuentaId,
+    -deltaEnOrigen(previo.tipo, aNumero(previo.monto), previo.moneda, previo.cuenta.moneda, tasa),
+  );
+  if (previo.cuentaDestino) {
+    acumular(
+      previo.cuentaDestino.id,
+      -redondear(
+        convertir(aNumero(previo.monto), previo.moneda, previo.cuentaDestino.moneda, tasa),
+      ),
+    );
+  }
+  // …y aplicar lo nuevo.
+  acumular(cuentaNueva.id, deltaEnOrigen(tipo, monto, moneda, cuentaNueva.moneda, tasa));
+  if (destinoNuevo) {
+    acumular(destinoNuevo.id, redondear(convertir(monto, moneda, destinoNuevo.moneda, tasa)));
+  }
+
+  return prisma.$transaction(async (tx) => {
+    for (const [cuentaId, delta] of ajustes) {
+      if (delta === 0) continue;
+      await tx.cuenta.update({
+        where: { id: cuentaId },
+        data: { saldoActual: { increment: delta } },
+      });
+    }
+
+    return tx.movimiento.update({
+      where: { id: previo.id },
+      data: {
+        tipo,
+        monto,
+        moneda,
+        cuentaId: cuentaNueva.id,
+        cuentaDestinoId: destinoNuevo?.id ?? null,
+        categoriaId:
+          tipo === "TRANSFERENCIA"
+            ? null
+            : cambios.categoriaId !== undefined
+              ? (cambios.categoriaId ?? null)
+              : previo.categoriaId,
+        fecha: cambios.fecha ?? previo.fecha,
+        nota: cambios.nota !== undefined ? (cambios.nota ?? null) : previo.nota,
+        esFijo: tipo === "INGRESO" ? (cambios.esFijo ?? previo.esFijo) : false,
+        esRecurrente: cambios.esRecurrente ?? previo.esRecurrente,
+        esExtraordinario: cambios.esExtraordinario ?? previo.esExtraordinario,
+      },
+      include: { cuenta: true, categoria: true, cuentaDestino: true },
+    });
+  });
+}
+
 /** Revierte el efecto de un movimiento sobre los saldos y lo borra. */
 export async function eliminarMovimiento(usuarioId: string, movimientoId: string) {
   const mov = await prisma.movimiento.findFirst({

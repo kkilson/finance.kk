@@ -21,6 +21,7 @@ export function DeudaCard({
   onEditar,
   onEliminarPago,
   onCerrar,
+  onEliminar,
 }: {
   deuda: DeudaDTO;
   cuentas: CuentaDTO[];
@@ -29,6 +30,7 @@ export function DeudaCard({
   onEditar: (datos: Record<string, unknown>) => Promise<void>;
   onEliminarPago: (pagoId: string) => Promise<void>;
   onCerrar: () => void;
+  onEliminar: () => void;
 }) {
   const pagos = d.pagos ?? [];
   const [pagando, setPagando] = useState(false);
@@ -133,6 +135,9 @@ export function DeudaCard({
         ) : null}
         <Boton variante="fantasma" onClick={onCerrar}>
           Cerrar deuda
+        </Boton>
+        <Boton variante="fantasma" onClick={onEliminar}>
+          Eliminar
         </Boton>
       </div>
 

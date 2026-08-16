@@ -178,6 +178,15 @@ export function DeudasCliente({
               accion(() => api.del(`/api/deudas/${d.id}/pagos/${pagoId}`))
             }
             onCerrar={() => accion(() => api.del(`/api/deudas/${d.id}`))}
+            onEliminar={() => {
+              const aviso =
+                `¿Eliminar "${d.nombre}" por completo? Se borran sus pagos, los movimientos ` +
+                "que los respaldan (devolviendo el dinero a cada cuenta) y las cuotas del " +
+                "presupuesto.\n\nSi solo terminaste de pagarla, cancela y usa Cerrar deuda.";
+              if (confirm(aviso)) {
+                void accion(() => api.del(`/api/deudas/${d.id}?forzar=true`));
+              }
+            }}
           />
         ))
       )}

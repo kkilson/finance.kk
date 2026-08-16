@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { conUsuario, json, leerBody, NoEncontradoError } from "@/lib/api";
 import { deudaEditarSchema } from "@/lib/schemas";
+import { eliminarPagoDeuda } from "@/lib/servicios/deudas";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -31,15 +32,38 @@ export const PATCH = conUsuario(async (usuarioId, req: Request, ctx: Ctx) => {
   return json(await prisma.deudaPrestamo.update({ where: { id }, data: datos }));
 });
 
-export const DELETE = conUsuario(async (usuarioId, _req: Request, ctx: Ctx) => {
+/**
+ * Sin `?forzar=true` una deuda con pagos se cierra en vez de borrarse, para no
+ * dejar movimientos huérfanos. Con `forzar` se borra entera: los pagos, los
+ * movimientos que los respaldan (devolviendo el dinero a cada cuenta) y las
+ * cuotas que quedaran en el presupuesto.
+ */
+export const DELETE = conUsuario(async (usuarioId, req: Request, ctx: Ctx) => {
   const { id } = await ctx.params;
   await propia(usuarioId, id);
-  const pagos = await prisma.pagoDeuda.count({ where: { deudaId: id } });
-  if (pagos > 0) {
-    // Con pagos registrados, borrar dejaría movimientos huérfanos: la cerramos.
-    return json({ cerrada: true, deuda: await prisma.deudaPrestamo.update({ where: { id }, data: { activa: false } }) });
+  const forzar = new URL(req.url).searchParams.get("forzar") === "true";
+
+  const pagos = await prisma.pagoDeuda.findMany({
+    where: { deudaId: id },
+    select: { id: true },
+  });
+
+  if (pagos.length > 0 && !forzar) {
+    return json({
+      cerrada: true,
+      pagos: pagos.length,
+      deuda: await prisma.deudaPrestamo.update({ where: { id }, data: { activa: false } }),
+    });
   }
-  await prisma.compromisoPresupuesto.deleteMany({ where: { deudaId: id, movimiento: null } });
-  await prisma.deudaPrestamo.delete({ where: { id } });
-  return json({ eliminada: true });
+
+  // Deshacer cada pago devuelve saldos y cuotas a su sitio antes de borrar.
+  for (const p of pagos) {
+    await eliminarPagoDeuda(usuarioId, id, p.id);
+  }
+
+  await prisma.$transaction([
+    prisma.compromisoPresupuesto.deleteMany({ where: { deudaId: id } }),
+    prisma.deudaPrestamo.delete({ where: { id } }),
+  ]);
+  return json({ eliminada: true, pagosDeshechos: pagos.length });
 });

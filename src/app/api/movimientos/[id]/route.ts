@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { conUsuario, json, leerBody, NoEncontradoError } from "@/lib/api";
 import { movimientoEditarSchema } from "@/lib/schemas";
-import { eliminarMovimiento } from "@/lib/servicios/movimientos";
+import { actualizarMovimiento, eliminarMovimiento } from "@/lib/servicios/movimientos";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -15,22 +15,11 @@ export const GET = conUsuario(async (usuarioId, _req: Request, ctx: Ctx) => {
   return json(mov);
 });
 
-/**
- * Solo campos que no afectan saldos. Para cambiar monto, cuenta o tipo hay que
- * eliminar y volver a registrar, así el ajuste de saldo pasa siempre por el
- * mismo camino transaccional.
- */
+/** Edita el movimiento recalculando los saldos afectados. */
 export const PATCH = conUsuario(async (usuarioId, req: Request, ctx: Ctx) => {
   const { id } = await ctx.params;
-  const existe = await prisma.movimiento.findFirst({ where: { id, usuarioId } });
-  if (!existe) throw new NoEncontradoError("Movimiento");
   const datos = await leerBody(req, movimientoEditarSchema);
-  const mov = await prisma.movimiento.update({
-    where: { id },
-    data: datos,
-    include: { cuenta: true, categoria: true, cuentaDestino: true },
-  });
-  return json(mov);
+  return json(await actualizarMovimiento(usuarioId, id, datos));
 });
 
 export const DELETE = conUsuario(async (usuarioId, _req: Request, ctx: Ctx) => {

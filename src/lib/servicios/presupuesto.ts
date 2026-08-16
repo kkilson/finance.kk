@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { NoEncontradoError, ReglaNegocioError } from "@/lib/api";
 import { aNumero, convertir, redondear } from "@/lib/moneda";
 import { inicioDePeriodo, mesPeriodoDe } from "@/lib/periodo";
-import { crearMovimiento } from "@/lib/servicios/movimientos";
+import { crearMovimiento, eliminarMovimiento } from "@/lib/servicios/movimientos";
 import type { Moneda } from "@/generated/prisma/enums";
 
 export async function resumenPresupuesto(usuarioId: string, mesPeriodo: string) {
@@ -145,6 +145,37 @@ export async function marcarCompromisoPagado(
   }
 
   return movimiento;
+}
+
+/**
+ * Deshace "marcar como pagado": borra el movimiento que se creó, devuelve el
+ * dinero a la cuenta y deja el compromiso pendiente otra vez.
+ */
+export async function desmarcarCompromisoPagado(usuarioId: string, compromisoId: string) {
+  const compromiso = await prisma.compromisoPresupuesto.findFirst({
+    where: { id: compromisoId, usuarioId },
+    include: { movimiento: { include: { pagosDeuda: true } } },
+  });
+  if (!compromiso) throw new NoEncontradoError("Compromiso");
+
+  if (!compromiso.movimiento) {
+    // Sin movimiento detrás basta con devolverle el estado.
+    return prisma.compromisoPresupuesto.update({
+      where: { id: compromiso.id },
+      data: { estado: "PENDIENTE" },
+    });
+  }
+
+  if (compromiso.movimiento.pagosDeuda.length > 0) {
+    throw new ReglaNegocioError(
+      "Esta cuota es el pago de una deuda. Deshazla en Deudas → la deuda → Pagos → Deshacer, " +
+        "así también vuelve a su sitio el saldo de la deuda",
+    );
+  }
+
+  // eliminarMovimiento ya revierte el saldo y deja el compromiso PENDIENTE.
+  await eliminarMovimiento(usuarioId, compromiso.movimiento.id);
+  return prisma.compromisoPresupuesto.findUniqueOrThrow({ where: { id: compromiso.id } });
 }
 
 /** Mismo día del mes destino; si no existe (31 en un mes de 30), el último día. */

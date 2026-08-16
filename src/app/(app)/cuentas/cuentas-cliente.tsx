@@ -14,6 +14,7 @@ import {
   Topbar,
   Vacio,
 } from "@/components/ui";
+import { FormEditarCuenta } from "@/components/cuentas/form-editar-cuenta";
 import { api } from "@/lib/cliente-api";
 import { formato } from "@/lib/formato";
 import type { CuentaDTO, Moneda, TipoCuenta } from "@/types";
@@ -40,6 +41,7 @@ export function CuentasCliente({
   const [pendiente, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [abierto, setAbierto] = useState(false);
+  const [editandoId, setEditandoId] = useState<string | null>(null);
   const [filtro, setFiltro] = useState<Filtro>("TODAS");
 
   const [nombre, setNombre] = useState("");
@@ -64,6 +66,14 @@ export function CuentasCliente({
   const balanceTotal = convBs !== null && convUsd !== null ? convBs + convUsd : null;
 
   const visibles = activas.filter((c) => filtro === "TODAS" || c.moneda === filtro);
+
+  async function eliminar(c: CuentaDTO) {
+    const aviso =
+      `¿Eliminar "${c.nombre}" y TODOS sus movimientos? Esto no se puede deshacer.\n\n` +
+      "Si solo quieres dejar de usarla, cancela y usa Archivar.";
+    if (!confirm(aviso)) return;
+    await accion(() => api.del(`/api/cuentas/${c.id}?forzar=true`));
+  }
 
   async function accion(fn: () => Promise<unknown>) {
     setError(null);
@@ -189,10 +199,8 @@ export function CuentasCliente({
           const meta = TIPOS.find((t) => t.valor === c.tipo)!;
           const conv = aReferencia(c.saldoActual, c.moneda);
           return (
-            <div
-              key={c.id}
-              className="group mb-2.5 flex items-center gap-3.5 rounded-[18px] bg-surface px-4 py-3.5 sombra-suave"
-            >
+            <div key={c.id} className="mb-2.5 rounded-[18px] bg-surface px-4 py-3.5 sombra-suave">
+              <div className="group flex items-center gap-3.5">
               <Tile color={meta.fondo}>{meta.icono}</Tile>
               <div className="min-w-0">
                 <div className="truncate text-[13.5px] font-semibold">{c.nombre}</div>
@@ -208,12 +216,42 @@ export function CuentasCliente({
                     : "Disponible"}
                 </div>
               </div>
-              <button
-                onClick={() => accion(() => api.del(`/api/cuentas/${c.id}`))}
-                className="shrink-0 text-[11px] text-ink-soft opacity-0 transition hover:text-danger group-hover:opacity-100"
+              <div
+                className={`flex shrink-0 gap-2 transition ${
+                  editandoId === c.id ? "" : "opacity-0 group-hover:opacity-100"
+                }`}
               >
-                Archivar
-              </button>
+                <button
+                  onClick={() => setEditandoId(editandoId === c.id ? null : c.id)}
+                  className="text-[11px] text-ink-soft transition hover:text-ink"
+                >
+                  {editandoId === c.id ? "Cerrar" : "Editar"}
+                </button>
+                <button
+                  onClick={() => accion(() => api.del(`/api/cuentas/${c.id}`))}
+                  className="text-[11px] text-ink-soft transition hover:text-ink"
+                >
+                  Archivar
+                </button>
+                <button
+                  onClick={() => eliminar(c)}
+                  className="text-[11px] text-ink-soft transition hover:text-danger"
+                >
+                  Eliminar
+                </button>
+              </div>
+              </div>
+
+              {editandoId === c.id ? (
+                <FormEditarCuenta
+                  cuenta={c}
+                  onCancelar={() => setEditandoId(null)}
+                  onGuardar={async (datos) => {
+                    await accion(() => api.patch(`/api/cuentas/${c.id}`, datos));
+                    setEditandoId(null);
+                  }}
+                />
+              ) : null}
             </div>
           );
         })
@@ -230,9 +268,21 @@ export function CuentasCliente({
           <summary className="cursor-pointer">Archivadas ({archivadas.length})</summary>
           <ul className="mt-2 flex flex-col gap-1">
             {archivadas.map((c) => (
-              <li key={c.id} className="flex justify-between px-1">
-                <span>{c.nombre}</span>
+              <li key={c.id} className="flex items-center gap-3 px-1 py-1">
+                <span className="flex-1">{c.nombre}</span>
                 <span className="num">{formato(c.saldoActual, c.moneda)}</span>
+                <button
+                  onClick={() => accion(() => api.patch(`/api/cuentas/${c.id}`, { activa: true }))}
+                  className="text-[11.5px] transition hover:text-ink"
+                >
+                  Reactivar
+                </button>
+                <button
+                  onClick={() => eliminar(c)}
+                  className="text-[11.5px] transition hover:text-danger"
+                >
+                  Eliminar
+                </button>
               </li>
             ))}
           </ul>

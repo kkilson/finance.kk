@@ -12,6 +12,7 @@ export function CategoriasCliente({ categorias }: { categorias: CategoriaDTO[] }
   const [error, setError] = useState<string | null>(null);
   const [vista, setVista] = useState<TipoCategoria>("GASTO");
   const [abierto, setAbierto] = useState(false);
+  const [editando, setEditando] = useState<CategoriaDTO | null>(null);
 
   const [nombre, setNombre] = useState("");
   const [icono, setIcono] = useState("");
@@ -52,6 +53,47 @@ export function CategoriasCliente({ categorias }: { categorias: CategoriaDTO[] }
 
       {error ? <p className="mb-3 text-[13px] text-danger">{error}</p> : null}
 
+      {editando ? (
+        <Tarjeta className="mb-4">
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              const f = new FormData(e.currentTarget as HTMLFormElement);
+              await accion(() =>
+                api.patch(`/api/categorias/${editando.id}`, {
+                  nombre: String(f.get("nombre")),
+                  icono: String(f.get("icono")) || null,
+                  color: String(f.get("color")) || null,
+                }),
+              );
+              setEditando(null);
+            }}
+            className="grid gap-4 md:grid-cols-4 md:items-end"
+          >
+            <Campo etiqueta="Nombre">
+              <Input name="nombre" defaultValue={editando.nombre} required />
+            </Campo>
+            <Campo etiqueta="Ícono">
+              <Input
+                name="icono"
+                defaultValue={editando.icono ?? ""}
+                maxLength={2}
+                className="text-center"
+              />
+            </Campo>
+            <Campo etiqueta="Color de fondo" hint="Hex, como #E6EEF9">
+              <Input name="color" defaultValue={editando.color ?? ""} />
+            </Campo>
+            <div className="flex gap-2">
+              <Boton type="submit">Guardar</Boton>
+              <Boton type="button" variante="secundario" onClick={() => setEditando(null)}>
+                Cancelar
+              </Boton>
+            </div>
+          </form>
+        </Tarjeta>
+      ) : null}
+
       {vista === "GASTO" ? (
         grupos.length === 0 ? (
           <Vacio mensaje="Sin categorías de gasto. Corre el seed o crea la primera." />
@@ -69,9 +111,16 @@ export function CategoriasCliente({ categorias }: { categorias: CategoriaDTO[] }
                   </Tile>
                   <div className="text-[14.5px] font-bold">{g.nombre}</div>
                   <button
+                    onClick={() => setEditando(g)}
+                    title="Editar grupo"
+                    className="ml-auto text-[13px] text-ink-soft hover:text-brand"
+                  >
+                    ✎
+                  </button>
+                  <button
                     onClick={() => accion(() => api.del(`/api/categorias/${g.id}`))}
                     title="Archivar grupo"
-                    className="ml-auto text-[13px] text-ink-soft hover:text-danger"
+                    className="text-[13px] text-ink-soft hover:text-danger"
                   >
                     ×
                   </button>
@@ -87,6 +136,13 @@ export function CategoriasCliente({ categorias }: { categorias: CategoriaDTO[] }
                         style={{ background: s.color ?? "#EEF1EC" }}
                       >
                         {s.icono ?? "•"} {s.nombre}
+                        <button
+                          onClick={() => setEditando(s)}
+                          title="Editar"
+                          className="opacity-0 transition hover:text-brand group-hover:opacity-100"
+                        >
+                          ✎
+                        </button>
                         <button
                           onClick={() => accion(() => api.del(`/api/categorias/${s.id}`))}
                           title="Archivar"
@@ -113,12 +169,22 @@ export function CategoriasCliente({ categorias }: { categorias: CategoriaDTO[] }
             >
               <Tile color={c.color}>{c.icono ?? "•"}</Tile>
               <div className="text-[13.5px] font-semibold">{c.nombre}</div>
-              <button
-                onClick={() => accion(() => api.del(`/api/categorias/${c.id}`))}
-                className="ml-auto text-[13px] text-ink-soft opacity-0 transition hover:text-danger group-hover:opacity-100"
-              >
-                ×
-              </button>
+              <div className="ml-auto flex gap-2 opacity-0 transition group-hover:opacity-100">
+                <button
+                  onClick={() => setEditando(c)}
+                  className="text-[13px] text-ink-soft hover:text-brand"
+                  title="Editar"
+                >
+                  ✎
+                </button>
+                <button
+                  onClick={() => accion(() => api.del(`/api/categorias/${c.id}`))}
+                  className="text-[13px] text-ink-soft hover:text-danger"
+                  title="Archivar"
+                >
+                  ×
+                </button>
+              </div>
             </div>
           ))}
         </div>

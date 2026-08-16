@@ -28,6 +28,8 @@ export const cuentaEditarSchema = cuentaCrearSchema
   .partial()
   .extend({ activa: z.boolean().optional() });
 
+export const categoriaDesarchivarSchema = z.object({ archivada: z.literal(false) });
+
 export const categoriaCrearSchema = z.object({
   nombre: z.string().trim().min(1, "El nombre es obligatorio"),
   tipo: tipoCategoriaSchema,
@@ -82,6 +84,11 @@ export const movimientoCrearSchema = z
   });
 
 export const movimientoEditarSchema = z.object({
+  tipo: tipoMovimientoSchema.optional(),
+  monto: z.number().positive("El monto debe ser mayor a cero").optional(),
+  moneda: monedaSchema.optional(),
+  cuentaId: z.string().min(1).optional(),
+  cuentaDestinoId: z.string().nullish(),
   categoriaId: z.string().nullish(),
   fecha: fechaIso.optional(),
   nota: z.string().nullish(),

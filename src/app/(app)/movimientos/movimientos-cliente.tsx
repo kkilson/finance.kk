@@ -13,6 +13,7 @@ import {
   Topbar,
   Vacio,
 } from "@/components/ui";
+import { FormEditarMovimiento } from "@/components/movimientos/form-editar-movimiento";
 import { api } from "@/lib/cliente-api";
 import { formato } from "@/lib/formato";
 import type { CategoriaDTO, CuentaDTO, Moneda, MovimientoDTO, TipoMovimiento } from "@/types";
@@ -35,6 +36,7 @@ export function MovimientosCliente({
   const [error, setError] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
   const [detalles, setDetalles] = useState(false);
+  const [editandoId, setEditandoId] = useState<string | null>(null);
 
   // Los 3 campos del "registro en 3 toques" (sección 6 de la spec)
   const [tipo, setTipo] = useState<TipoMovimiento>("GASTO");
@@ -95,6 +97,17 @@ export function MovimientosCliente({
     setError(null);
     try {
       await api.del(`/api/movimientos/${id}`);
+      startTransition(() => router.refresh());
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+
+  async function editar(id: string, datos: Record<string, unknown>) {
+    setError(null);
+    try {
+      await api.patch(`/api/movimientos/${id}`, datos);
+      setEditandoId(null);
       startTransition(() => router.refresh());
     } catch (e) {
       setError((e as Error).message);
@@ -256,43 +269,64 @@ export function MovimientosCliente({
       ) : (
         <div className="rounded-[22px] bg-surface px-5 py-2 sombra-suave">
           {movimientos.map((m) => (
-            <div
-              key={m.id}
-              className="group flex items-center gap-3 border-b border-line py-3 last:border-none"
-            >
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-[13.5px]">
-                  {m.categoria?.icono ? `${m.categoria.icono} ` : ""}
-                  {m.categoria?.nombre ??
-                    (m.tipo === "TRANSFERENCIA"
-                      ? `${m.cuenta.nombre} → ${m.cuentaDestino?.nombre ?? "?"}`
-                      : "Sin categoría")}
-                  {m.nota ? <span className="text-ink-soft"> · {m.nota}</span> : null}
-                </p>
-                <p className="text-[11.5px] text-ink-soft">
-                  {new Date(m.fecha).toLocaleDateString("es-VE")} · {m.cuenta.nombre}
-                  {m.esExtraordinario ? " · extraordinario" : ""}
-                  {m.esFijo ? " · fijo" : ""}
-                </p>
+            <div key={m.id} className="border-b border-line last:border-none">
+              <div className="group flex items-center gap-3 py-3">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[13.5px]">
+                    {m.categoria?.icono ? `${m.categoria.icono} ` : ""}
+                    {m.categoria?.nombre ??
+                      (m.tipo === "TRANSFERENCIA"
+                        ? `${m.cuenta.nombre} → ${m.cuentaDestino?.nombre ?? "?"}`
+                        : "Sin categoría")}
+                    {m.nota ? <span className="text-ink-soft"> · {m.nota}</span> : null}
+                  </p>
+                  <p className="text-[11.5px] text-ink-soft">
+                    {new Date(m.fecha).toLocaleDateString("es-VE")} · {m.cuenta.nombre}
+                    {m.esExtraordinario ? " · extraordinario" : ""}
+                    {m.esFijo ? " · fijo" : ""}
+                  </p>
+                </div>
+                <span
+                  className={`num shrink-0 text-[13.5px] font-semibold ${
+                    m.tipo === "INGRESO"
+                      ? "text-success"
+                      : m.tipo === "GASTO"
+                        ? "text-danger"
+                        : "text-ink-soft"
+                  }`}
+                >
+                  {m.tipo === "INGRESO" ? "+" : m.tipo === "GASTO" ? "−" : ""}
+                  {formato(m.monto, m.moneda)}
+                </span>
+                <div
+                  className={`flex shrink-0 gap-2 transition ${
+                    editandoId === m.id ? "" : "opacity-0 group-hover:opacity-100"
+                  }`}
+                >
+                  <button
+                    onClick={() => setEditandoId(editandoId === m.id ? null : m.id)}
+                    className="text-[11px] text-ink-soft transition hover:text-ink"
+                  >
+                    {editandoId === m.id ? "Cerrar" : "Editar"}
+                  </button>
+                  <button
+                    onClick={() => borrar(m.id)}
+                    className="text-[11px] text-ink-soft transition hover:text-danger"
+                  >
+                    Eliminar
+                  </button>
+                </div>
               </div>
-              <span
-                className={`num shrink-0 text-[13.5px] font-semibold ${
-                  m.tipo === "INGRESO"
-                    ? "text-success"
-                    : m.tipo === "GASTO"
-                      ? "text-danger"
-                      : "text-ink-soft"
-                }`}
-              >
-                {m.tipo === "INGRESO" ? "+" : m.tipo === "GASTO" ? "−" : ""}
-                {formato(m.monto, m.moneda)}
-              </span>
-              <button
-                onClick={() => borrar(m.id)}
-                className="shrink-0 text-[11px] text-ink-soft opacity-0 transition hover:text-danger group-hover:opacity-100"
-              >
-                Eliminar
-              </button>
+
+              {editandoId === m.id ? (
+                <FormEditarMovimiento
+                  movimiento={m}
+                  cuentas={cuentas}
+                  categorias={categorias}
+                  onCancelar={() => setEditandoId(null)}
+                  onGuardar={(datos) => editar(m.id, datos)}
+                />
+              ) : null}
             </div>
           ))}
         </div>

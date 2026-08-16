@@ -15,6 +15,7 @@ import {
   Vacio,
 } from "@/components/ui";
 import { CalendarioMes } from "@/components/presupuesto/calendario-mes";
+import { FormEditarCompromiso } from "@/components/presupuesto/form-editar-compromiso";
 import { api } from "@/lib/cliente-api";
 import { desplazarMes, diaCorto, formato, nombreMes } from "@/lib/formato";
 import type { CategoriaDTO, CompromisoDTO, CuentaDTO, PresupuestoDTO } from "@/types";
@@ -182,10 +183,19 @@ export function PresupuestoCliente({
                   key={c.id}
                   compromiso={c}
                   cuentas={cuentas}
+                  categorias={categorias}
                   onMarcar={(cuentaId) =>
                     accion(() =>
                       api.patch(`/api/presupuesto/compromisos/${c.id}/marcar-pagado`, { cuentaId }),
                     )
+                  }
+                  onDesmarcar={() =>
+                    accion(() =>
+                      api.patch(`/api/presupuesto/compromisos/${c.id}/desmarcar-pagado`, {}),
+                    )
+                  }
+                  onEditar={(datos) =>
+                    accion(() => api.patch(`/api/presupuesto/compromisos/${c.id}`, datos))
                   }
                   onEliminar={() => accion(() => api.del(`/api/presupuesto/compromisos/${c.id}`))}
                 />
@@ -206,10 +216,19 @@ export function PresupuestoCliente({
                 key={c.id}
                 compromiso={c}
                 cuentas={cuentas}
+                categorias={categorias}
                 onMarcar={(cuentaId) =>
                   accion(() =>
                     api.patch(`/api/presupuesto/compromisos/${c.id}/marcar-pagado`, { cuentaId }),
                   )
+                }
+                onDesmarcar={() =>
+                  accion(() =>
+                    api.patch(`/api/presupuesto/compromisos/${c.id}/desmarcar-pagado`, {}),
+                  )
+                }
+                onEditar={(datos) =>
+                  accion(() => api.patch(`/api/presupuesto/compromisos/${c.id}`, datos))
                 }
                 onEliminar={() => accion(() => api.del(`/api/presupuesto/compromisos/${c.id}`))}
               />
@@ -224,19 +243,27 @@ export function PresupuestoCliente({
 function FilaCompromiso({
   compromiso: c,
   cuentas,
+  categorias,
   onMarcar,
+  onDesmarcar,
+  onEditar,
   onEliminar,
 }: {
   compromiso: CompromisoDTO;
   cuentas: CuentaDTO[];
+  categorias: CategoriaDTO[];
   onMarcar: (cuentaId: string) => void;
+  onDesmarcar: () => void;
+  onEditar: (datos: Record<string, unknown>) => Promise<void>;
   onEliminar: () => void;
 }) {
   const [eligiendo, setEligiendo] = useState(false);
+  const [editando, setEditando] = useState(false);
   const saldado = c.estado === "PAGADO" || c.estado === "COBRADO";
 
   return (
-    <li className="group flex items-center gap-3 border-b border-line py-2.5 last:border-none">
+    <li className="border-b border-line last:border-none">
+      <div className="group flex items-center gap-3 py-2.5">
       <button
         onClick={() => (saldado ? undefined : setEligiendo((v) => !v))}
         disabled={saldado}
@@ -262,14 +289,36 @@ function FilaCompromiso({
 
       {c.estado === "ATRASADO" ? <Pill tono="danger">Atrasado</Pill> : null}
       <span className="num shrink-0 text-[13px] font-semibold">{formato(c.monto, c.moneda)}</span>
-      {!saldado ? (
-        <button
-          onClick={onEliminar}
-          className="shrink-0 text-[11px] text-ink-soft opacity-0 transition hover:text-danger group-hover:opacity-100"
-        >
-          ×
-        </button>
-      ) : null}
+      <div
+        className={`flex shrink-0 gap-2 transition ${
+          editando ? "" : "opacity-0 group-hover:opacity-100"
+        }`}
+      >
+        {saldado ? (
+          <button
+            onClick={onDesmarcar}
+            title="Volver a dejarlo pendiente"
+            className="text-[11px] text-ink-soft transition hover:text-ink"
+          >
+            Desmarcar
+          </button>
+        ) : (
+          <>
+            <button
+              onClick={() => setEditando((v) => !v)}
+              className="text-[11px] text-ink-soft transition hover:text-ink"
+            >
+              {editando ? "Cerrar" : "Editar"}
+            </button>
+            <button
+              onClick={onEliminar}
+              className="text-[11px] text-ink-soft transition hover:text-danger"
+            >
+              Eliminar
+            </button>
+          </>
+        )}
+      </div>
 
       {eligiendo ? (
         <div className="flex shrink-0 items-center gap-1">
@@ -291,6 +340,19 @@ function FilaCompromiso({
             ))}
           </Select>
         </div>
+      ) : null}
+      </div>
+
+      {editando ? (
+        <FormEditarCompromiso
+          compromiso={c}
+          categorias={categorias}
+          onCancelar={() => setEditando(false)}
+          onGuardar={async (datos) => {
+            await onEditar(datos);
+            setEditando(false);
+          }}
+        />
       ) : null}
     </li>
   );
