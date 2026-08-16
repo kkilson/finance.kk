@@ -126,11 +126,18 @@ variable. `src/instrumentation.ts` la lee al arrancar y se la asigna a `TZ` en
 caliente, que es algo que Node sí admite. En el log de arranque queda la línea
 `Zona horaria del proceso: …` para poder confirmarlo.
 
-El `vercel-build` aplica las migraciones pendientes antes de compilar, pero
-solo si `DIRECT_URL` apunta a algo que las soporte. Si falta o apunta al pooler
-de transacción, avisa en el log y sigue con el build en vez de romper el
-deploy — el precio es que el esquema puede quedar desactualizado, así que
-conviene revisar ese aviso.
+**Las migraciones no corren en el build.** Se aplican a mano, deliberadamente:
+
+```bash
+npm run db:deploy
+```
+
+Correrlas al compilar parecía cómodo, pero el build de Vercel no tiene por qué
+alcanzar la base, y cuando no la alcanza `prisma migrate deploy` **no falla: se
+queda colgado sin imprimir nada** hasta agotar el tiempo del build. El síntoma
+es un log que se corta justo después del `npm install`, sin ningún error. Un
+esquema desactualizado se nota y se arregla en un comando; un build que cuelga
+cuesta bastante más diagnosticar.
 
 ### 3. El cron en Vercel
 

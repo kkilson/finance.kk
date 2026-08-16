@@ -16,7 +16,6 @@
     "vapid:generar": "tsx scripts/generar-vapid.ts",
     "cron": "tsx scripts/cron.ts",
     "postinstall": "prisma generate",
-    "vercel-build": "node scripts/build-vercel.mjs",
     "pass:cambiar": "tsx scripts/cambiar-password.ts"
   },
   "dependencies": {
